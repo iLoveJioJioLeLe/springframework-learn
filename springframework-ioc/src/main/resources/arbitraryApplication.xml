@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean class="com.yy.arbitraryMethodReplace.MyCalculatorMethodReplacer" id="myCalculatorMethodReplacer"/>
+    <bean class="com.yy.arbitraryMethodReplace.MyCalculator" id="myCalculator">
+        <replaced-method name="calculate" replacer="myCalculatorMethodReplacer">
+            <arg-type>String</arg-type>
+        </replaced-method>
+    </bean>
+</beans>
