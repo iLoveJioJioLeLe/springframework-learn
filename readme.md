@@ -1,3 +1,4 @@
+<span id="top"></span>
 [7.IOC容器](#7)
 - [7.1 介绍IOC容器和Beans](#7.1)
 - [7.2 容器概述](#7.2)
@@ -17,19 +18,19 @@
 
 
 
-# 7. IOC容器<span id="7"></span>
+# 7. IOC容器<span id="7"></span>[back](#top)
 
-## 7.1 介绍IOC容器和Beans<span id="7.1"></span>
+## 7.1 介绍IOC容器和Beans<span id="7.1"></span>[back](#top)
 
-## 7.2 容器概述<span id="7.2"></span>
+## 7.2 容器概述<span id="7.2"></span>[back](#top)
 >IoC is also known as dependency injection (DI). It is a process whereby objects define their dependencies, that is, the other objects they work with, only through constructor arguments, arguments to a factory method, or properties that are set on the object instance after it is constructed or returned from a factory method. The container then injects those dependencies when it creates the bean. This process is fundamentally the inverse, hence the name Inversion of Control (IoC), of the bean itself controlling the instantiation or location of its dependencies by using direct construction of classes, or a mechanism such as the Service Locator pattern.
-### 7.2.1 配置元数据<span id="7.2.1"></span>
+### 7.2.1 配置元数据<span id="7.2.1"></span>[back](#top)
 >configuration metadata represents how you as an application developer tell the Spring container to instantiate, configure, and assemble the objects in your application.
 For information about using other forms of metadata with the Spring container, see:
 1. Annotation-based configuration: Spring 2.5 introduced support for annotation-based configuration metadata.
 2. Java-based configuration: Starting with Spring 3.0, many features provided by the Spring JavaConfig project became part of the core Spring Framework. Thus you can define beans external to your application classes by using Java rather than XML files. To use these new features, see the @Configuration, @Bean, @Import and @DependsOn annotations.
 
-### 7.2.2 初始化容器<span id="7.2.2"></span>
+### 7.2.2 初始化容器<span id="7.2.2"></span>[back](#top)
 `ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");`
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -42,7 +43,7 @@ For information about using other forms of metadata with the Spring container, s
 </beans>
 ```
 
-### 7.2.3 使用容器<span id="7.2.3"></span>
+### 7.2.3 使用容器<span id="7.2.3"></span>[back](#top)
 >The ApplicationContext is the interface for an advanced factory capable of maintaining a registry of different beans and their dependencies. Using the method T getBean(String name, Class<T> requiredType) you can retrieve instances of your beans.
 ```java
 // create and configure beans
@@ -55,7 +56,7 @@ PetStoreService service = context.getBean("petStore", PetStoreService.class);
 List<String> userList = service.getUsernameList();
 ```
 
-## 7.3 Bean概述<span id="7.3"></span>
+## 7.3 Bean概述<span id="7.3"></span>[back](#top)
 
 ### Bean定义
 - Property
@@ -69,7 +70,7 @@ List<String> userList = service.getUsernameList();
    - initialization method
    - destruction method
      
-### 7.3.1 命名Bean<span id="7.3.1"></span>
+### 7.3.1 命名Bean<span id="7.3.1"></span>[back](#top)
 >In XML-based configuration metadata, you use the id and/or name attributes to specify the bean identifier(s). 
 
 #### Bean别名
@@ -79,7 +80,7 @@ List<String> userList = service.getUsernameList();
 <alias name="myApp-dataSource" alias="subsystemB-dataSource"/>
 ```
 
-### 7.3.2 实例化Bean<span id="7.3.2"></span>
+### 7.3.2 实例化Bean<span id="7.3.2"></span>[back](#top)
 - 静态内部类配置Bean
 >Inner class names.  If you want to configure a bean definition for a static nested class, you have to use the binary name of the nested class.
 
@@ -139,9 +140,9 @@ public class DefaultServiceLocator {
     }
 }
 ```
-## 7.4 依赖<span id="7.4"></span>
+## 7.4 依赖<span id="7.4"></span>[back](#top)
 
-### 7.4.1 依赖注入<span id="7.4.1"></span>
+### 7.4.1 依赖注入<span id="7.4.1"></span>[back](#top)
 
 >Dependency injection (DI) is a process whereby objects define their dependencies, that is, the other objects they work with, only through constructor arguments, arguments to a factory method, or properties that are set on the object instance after it is constructed or returned from a factory method. The container then injects those dependencies when it creates the bean. This process is fundamentally the inverse, hence the name Inversion of Control (IoC), of the bean itself controlling the instantiation or location of its dependencies on its own by using direct construction of classes, or the Service Locator pattern.
  
@@ -226,7 +227,7 @@ public class SimpleMovieLister {
 - 通过构造方法进行依赖注入会导致循环引用
 - 通过setter方法进行依赖注入不会
 
-### 7.4.2 依赖和配置详解<span id="7.4.2"></span>
+### 7.4.2 依赖和配置详解<span id="7.4.2"></span>[back](#top)
 
 #### 直接使用value
 #### 将value转换为java.util.Properties
@@ -394,7 +395,7 @@ support=support@example.co.uk
 等同于
 `exampleBean.setEmail(null);`
 
-#### p命名空间和c命名空间
+#### p命名空间和c命名空间(忽略)
 
 #### 复合属性名称
 ```xml
@@ -405,7 +406,7 @@ support=support@example.co.uk
 foo有fred属性，fred有bob属性，bob有sammy属性，设置sammy为123.
 如果foo构造结束后，有嵌套属性为null，则抛出NullPointerException.
 
-### 7.4.3 使用depends-on <span id="7.4.3"></span>
+### 7.4.3 使用depends-on <span id="7.4.3"></span>[back](#top)
 
 通常我们使用setter方法进行依赖注入，在xml配置中使用<ref/>元素。
 但是有时bean之间的依赖很严格，例如：一个类的静态初始化方法需要先被执行。
@@ -424,7 +425,7 @@ depends-on属性能让一个或多个bean在当前bean之前初始化。
 <bean id="accountDao" class="x.y.jdbc.JdbcAccountDao" />
 ```
 
-### 7.4.4 延迟实例化Beans <span id="7.4.4"></span>
+### 7.4.4 延迟实例化Beans <span id="7.4.4"></span>[back](#top)
 >By default, ApplicationContext implementations eagerly create and configure all singleton beans as part of the initialization process. Generally, this pre-instantiation is desirable, because errors in the configuration or surrounding environment are discovered immediately, as opposed to hours or even days later. When this behavior is not desirable, you can prevent pre-instantiation of a singleton bean by marking the bean definition as lazy-initialized. A lazy-initialized bean tells the IoC container to create a bean instance when it is first requested, rather than at startup.
 
 ```xml
@@ -440,7 +441,7 @@ depends-on属性能让一个或多个bean在当前bean之前初始化。
 </beans>
 ```
 
-### 7.4.5 自动装配 <span id="7.4.5"></span>
+### 7.4.5 自动装配 <span id="7.4.5"></span>[back](#top)
 ```xml
 <bean id="xxx" class="xxx" autowire="byType"></bean>
 ```
