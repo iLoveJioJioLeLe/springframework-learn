@@ -701,19 +701,18 @@ beanFactory.registerScope("thread", threadScope);
 <bean class="org.springframework.beans.factory.config.CustomScopeConfigurer">
         <property name="scopes">
             <map>
-                <entry key="thread">
-                    <bean class="org.springframework.context.support.SimpleThreadScope"/>
+                <entry key="custom">
+                    <bean class="com.yy.scope.CustomScope"/>
                 </entry>
             </map>
         </property>
     </bean>
 
-    <bean id="bar" class="x.y.Bar" scope="thread">
-        <property name="name" value="Rick"/>
+    <bean id="bar" class="com.yy.scope.Bar" scope="custom">
         <aop:scoped-proxy/>
     </bean>
 
-    <bean id="foo" class="x.y.Foo">
+    <bean id="foo" class="com.yy.scope.Foo">
         <property name="bar" ref="bar"/>
     </bean>
 ```
