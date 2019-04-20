@@ -18,19 +18,19 @@
 
 
 
-# 7. IOC容器<span id="7"></span>[back](#top)
+# 7. IOC容器<span id="7"></span>
 
-## 7.1 介绍IOC容器和Beans<span id="7.1"></span>[back](#top)
+## 7.1 介绍IOC容器和Beans<span id="7.1"></span>
 
-## 7.2 容器概述<span id="7.2"></span>[back](#top)
+## 7.2 容器概述<span id="7.2"></span>
 >IoC is also known as dependency injection (DI). It is a process whereby objects define their dependencies, that is, the other objects they work with, only through constructor arguments, arguments to a factory method, or properties that are set on the object instance after it is constructed or returned from a factory method. The container then injects those dependencies when it creates the bean. This process is fundamentally the inverse, hence the name Inversion of Control (IoC), of the bean itself controlling the instantiation or location of its dependencies by using direct construction of classes, or a mechanism such as the Service Locator pattern.
-### 7.2.1 配置元数据<span id="7.2.1"></span>[back](#top)
+### 7.2.1 配置元数据<span id="7.2.1"></span>
 >configuration metadata represents how you as an application developer tell the Spring container to instantiate, configure, and assemble the objects in your application.
 For information about using other forms of metadata with the Spring container, see:
 1. Annotation-based configuration: Spring 2.5 introduced support for annotation-based configuration metadata.
 2. Java-based configuration: Starting with Spring 3.0, many features provided by the Spring JavaConfig project became part of the core Spring Framework. Thus you can define beans external to your application classes by using Java rather than XML files. To use these new features, see the @Configuration, @Bean, @Import and @DependsOn annotations.
 
-### 7.2.2 初始化容器<span id="7.2.2"></span>[back](#top)
+### 7.2.2 初始化容器<span id="7.2.2"></span>
 `ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");`
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -229,6 +229,7 @@ public class SimpleMovieLister {
 
 - 通过构造方法进行依赖注入会导致循环引用
 - 通过setter方法进行依赖注入不会
+
 [<-](#top)
 ### 7.4.2 依赖和配置详解<span id="7.4.2"></span>
 
