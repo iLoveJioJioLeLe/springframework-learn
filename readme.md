@@ -456,4 +456,153 @@ depends-on属性能让一个或多个bean在当前bean之前初始化。
 | byType | 通过类型自动装配，如果容器中存在类型相同的Bean则注入，否则为Null |
 | byName | 与byType类似，但是用于构造方法的入参，如果容器里没有该类型的Bean会抛出异常 |
 
+[<-](#top)
+### 7.4.6 方法注入 <span id="7.4.6"></span>
+
+#### 问题：A单例依赖一个非单例B
+
+#### 解决方案1：A实现ApplicationContextAware直接操作容器
+```java
+// a class that uses a stateful Command-style class to perform some processing
+package fiona.apple;
+
+// Spring-API imports
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+public class CommandManager implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    public Object process(Map commandState) {
+        // grab a new instance of the appropriate Command
+        Command command = createCommand();
+        // set the state on the (hopefully brand new) Command instance
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    protected Command createCommand() {
+        // notice the Spring API dependency!
+        return this.applicationContext.getBean("command", Command.class);
+    }
+
+    public void setApplicationContext(
+            ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+}
+```
+#### 解决方案2：Lookup方法注入
+>Lookup method injection is the ability of the container to override methods on container managed beans, to return the lookup result for another named bean in the container. The lookup typically involves a prototype bean as in the scenario described in the preceding section. The Spring Framework implements this method injection by using bytecode generation from the CGLIB library to generate dynamically a subclass that overrides the method.
+
+Spring容器能够通过Lookup方法注入重写容器中Bean的方法。使用动态生成字节码CGLIB自动生成子类重写方法。
+1. 方法不能是final类型
+2. 单元测试需要实例方法
+3. 使用component-scan则需要实例方法
+4. @Bean方法不支持
+```java
+package fiona.apple;
+
+// no more Spring imports!
+
+public abstract class CommandManager {
+
+    public Object process(Object commandState) {
+        // grab a new instance of the appropriate Command interface
+        Command command = createCommand();
+        // set the state on the (hopefully brand new) Command instance
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    // okay... but where is the implementation of this method?
+    protected abstract Command createCommand();
+}
+```
+```xml
+<!-- a stateful bean deployed as a prototype (non-singleton) -->
+<bean id="myCommand" class="fiona.apple.AsyncCommand" scope="prototype">
+    <!-- inject dependencies here as required -->
+</bean>
+
+<!-- commandProcessor uses statefulCommandHelper -->
+<bean id="commandManager" class="fiona.apple.CommandManager">
+    <lookup-method name="createCommand" bean="myCommand"/>
+</bean>
+```
+方法注入需要方法签名如下：
+`<public|protected> [abstract] <return-type> theMethodName(no-arguments);`
+如果方法是抽象的，自动生成的子类会实现这个方法。
+其他情况，自动生成的子类会重写原来的实例方法。
+
+#### 使用Lookup注解
+1. 通过Bean名字注入
+```java
+public abstract class CommandManager {
+
+    public Object process(Object commandState) {
+        Command command = createCommand();
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    @Lookup("myCommand")
+    protected abstract Command createCommand();
+}
+```
+2. 通过类型匹配注入
+```java
+public abstract class CommandManager {
+
+    public Object process(Object commandState) {
+        MyCommand command = createCommand();
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    @Lookup
+    protected abstract MyCommand createCommand();
+}
+```
+
+#### 解决方案3：方法替换Arbitrary method replacement
+```java
+public class MyCalculatorMethodReplacer implements MethodReplacer {
+    public Object reimplement(Object obj, Method method, Object[] args) throws Throwable {
+        return args[0] + " from replacer";
+    }
+}
+```
+```java
+public class MyCalculator {
+    public String calculate(String input) {
+        return input;
+    }
+}
+```
+```xml
+    <bean class="com.yy.arbitraryMethodReplace.MyCalculatorMethodReplacer" id="myCalculatorMethodReplacer"/>
+    <bean class="com.yy.arbitraryMethodReplace.MyCalculator" id="myCalculator">
+        <replaced-method name="calculate" replacer="myCalculatorMethodReplacer">
+            <arg-type>String</arg-type>
+        </replaced-method>
+    </bean>
+```
+
+[<-](#top)
+## 7.5 Bean Scopes<span id="7.5"></span>
+
+| Scope | Description |
+| - | - |
+| singleton | 默认。一个SpringIOC容器一个单例对象 |
+| prototype | 任意数量对象实例 |
+| request | 一个Http请求一个对象 |
+| session | 一个HttpSession一个对象 |
+| globalSession | 一个全局HttpSession一个对象，仅在portlet上下文存在 |
+| application | 一个ServletContext一个对象 |
+| websocket | 一个WebSocket一个对象 |
+
+
 
