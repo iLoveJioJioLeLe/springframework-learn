@@ -7,12 +7,12 @@
 - [7.3 Bean概述](#7.3)
    - [7.3.1 命名Bean](#7.3.1)
    - [7.3.2 实例化Bean](#7.3.2)
-- [7.4 依赖](#Dependencies)
-   - [7.4.1 依赖注入](#Dependency Injection)
-   - [7.4.2 依赖和配置详解](#Dependencies and configuration in detail)
-   - [7.4.3 使用depends-on](#Using depends-on)
-   - [7.4.4 延迟实例化Beans](#Lazy-initialized beans)
-   - [7.4.5 自动装配](#Autowiring collaborators)
+- [7.4 依赖](#7.4)
+   - [7.4.1 依赖注入](#7.4.1)
+   - [7.4.2 依赖和配置详解](#7.4.2)
+   - [7.4.3 使用depends-on](#7.4.3)
+   - [7.4.4 延迟实例化Beans](#7.4.4)
+   - [7.4.5 自动装配](#7.4.5)
 
 
 
@@ -139,9 +139,9 @@ public class DefaultServiceLocator {
     }
 }
 ```
-## 7.4 依赖<span id="Dependencies"></span>
+## 7.4 依赖<span id="7.4"></span>
 
-### 7.4.1 依赖注入<span id="Dependency Injection"></span>
+### 7.4.1 依赖注入<span id="7.4.1"></span>
 
 >Dependency injection (DI) is a process whereby objects define their dependencies, that is, the other objects they work with, only through constructor arguments, arguments to a factory method, or properties that are set on the object instance after it is constructed or returned from a factory method. The container then injects those dependencies when it creates the bean. This process is fundamentally the inverse, hence the name Inversion of Control (IoC), of the bean itself controlling the instantiation or location of its dependencies on its own by using direct construction of classes, or the Service Locator pattern.
  
@@ -226,7 +226,7 @@ public class SimpleMovieLister {
 - 通过构造方法进行依赖注入会导致循环引用
 - 通过setter方法进行依赖注入不会
 
-### 7.4.2 依赖和配置详解<span id="Dependencies and configuration in detail"></span>
+### 7.4.2 依赖和配置详解<span id="7.4.2"></span>
 
 #### 直接使用value
 #### 将value转换为java.util.Properties
@@ -363,11 +363,12 @@ ref上的local属性在4.0的xsd中不支持了，可以使用ref的bean属性�
 <beans>
 ```
 child的adminEmails最终为
+```properties
 administrator=administrator@example.com
 sales=sales@example.com
 support=support@example.co.uk
-
-这种合并与<list/>, <map/>, <set/>一致，不同点是list有序。
+```
+这种合并与list, map, set一致，不同点是list有序。
 
 #### 集合合并的限制
 *不同的集合类型不能合并，如map和list*
@@ -404,7 +405,7 @@ support=support@example.co.uk
 foo有fred属性，fred有bob属性，bob有sammy属性，设置sammy为123.
 如果foo构造结束后，有嵌套属性为null，则抛出NullPointerException.
 
-### 7.4.3 使用depends-on <span id="Using depends-on"></span>
+### 7.4.3 使用depends-on <span id="7.4.3"></span>
 
 通常我们使用setter方法进行依赖注入，在xml配置中使用<ref/>元素。
 但是有时bean之间的依赖很严格，例如：一个类的静态初始化方法需要先被执行。
@@ -423,7 +424,7 @@ depends-on属性能让一个或多个bean在当前bean之前初始化。
 <bean id="accountDao" class="x.y.jdbc.JdbcAccountDao" />
 ```
 
-### 7.4.4 延迟实例化Beans <span id="Lazy-initialized beans"></span>
+### 7.4.4 延迟实例化Beans <span id="7.4.4"></span>
 >By default, ApplicationContext implementations eagerly create and configure all singleton beans as part of the initialization process. Generally, this pre-instantiation is desirable, because errors in the configuration or surrounding environment are discovered immediately, as opposed to hours or even days later. When this behavior is not desirable, you can prevent pre-instantiation of a singleton bean by marking the bean definition as lazy-initialized. A lazy-initialized bean tells the IoC container to create a bean instance when it is first requested, rather than at startup.
 
 ```xml
@@ -439,7 +440,7 @@ depends-on属性能让一个或多个bean在当前bean之前初始化。
 </beans>
 ```
 
-### 7.4.5 自动装配 <span id="Autowiring collaborators"></span>
+### 7.4.5 自动装配 <span id="7.4.5"></span>
 ```xml
 <bean id="xxx" class="xxx" autowire="byType"></bean>
 ```
