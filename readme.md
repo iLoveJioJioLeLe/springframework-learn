@@ -14,8 +14,13 @@
    - [7.4.3 使用depends-on](#7.4.3)
    - [7.4.4 延迟实例化Beans](#7.4.4)
    - [7.4.5 自动装配](#7.4.5)
-
-
+   - [7.4.6 方法注入](#7.4.6)
+- [7.5 Bean作用域](#7.5)
+   - [7.5.1 单例singleton作用域](#7.5.1)
+   - [7.5.2 原型prototype作用域](#7.5.2)
+   - [7.5.3 单例Bean依赖原型Bean](#7.5.3)
+   - [7.5.4 Request,Session,Global Session,Application,WebSocket Scopes](#7.5.4)
+   - [7.5.5 自定义作用域](#7.5.5)
 
 
 # 7. IOC容器<span id="7"></span>
@@ -592,7 +597,7 @@ public class MyCalculator {
 ```
 
 [<-](#top)
-## 7.5 Bean Scopes<span id="7.5"></span>
+## 7.5 Bean作用域<span id="7.5"></span>
 
 | Scope | Description |
 | - | - |
@@ -604,5 +609,111 @@ public class MyCalculator {
 | application | 一个ServletContext一个对象 |
 | websocket | 一个WebSocket一个对象 |
 
+在Spring3.0中支持thread scope(SimpleThreadScope)
+
+[<-](#top)
+### 7.5.1 单例singleton作用域<span id="7.5.1"></span>
+```xml
+<bean id="accountService" class="com.foo.DefaultAccountService"/>
+
+<!-- the following is equivalent, though redundant (singleton scope is the default) -->
+<bean id="accountService" class="com.foo.DefaultAccountService" scope="singleton"/>
+```
+
+[<-](#top)
+### 7.5.2 原型prototype作用域<span id="7.5.2"></span>
+```xml
+<bean id="accountService" class="com.foo.DefaultAccountService" scope="prototype"/>
+```
+>In contrast to the other scopes, Spring does not manage the complete lifecycle of a prototype bean: the container instantiates, configures, and otherwise assembles a prototype object, and hands it to the client, with no further record of that prototype instance. Thus, although initialization lifecycle callback methods are called on all objects regardless of scope, in the case of prototypes, configured destruction lifecycle callbacks are not called. The client code must clean up prototype-scoped objects and release expensive resources that the prototype bean(s) are holding. To get the Spring container to release resources held by prototype-scoped beans, try using a custom bean post-processor, which holds a reference to beans that need to be cleaned up.
+ 
+ Spring不负责管理原型对象的完整生命周期。  
+ 原型对象实例化后就由客户端管理，
+ 尽管初始化生命周期回调方法会被执行，
+ 但是销毁生命周期回调方法不会被执行。
+ 通过使用自定义的BeanPostProcessor可以获取需要清理的原型对象的引用。
+ 
+[<-](#top)
+### 7.5.3 单例Bean依赖原型Bean<span id="7.5.3"></span>
+[参照7.4.6 方法注入](#7.4.6)
 
 
+[<-](#top)
+### 7.5.4 Request,Session,Global Session,Application,WebSocket Scopes<span id="7.5.4"></span>
+>The request, session, globalSession, application, and websocket scopes are only available if you use a web-aware Spring ApplicationContext implementation (such as XmlWebApplicationContext). If you use these scopes with regular Spring IoC containers such as the ClassPathXmlApplicationContext, an IllegalStateException will be thrown complaining about an unknown bean scope.
+>The Spring IoC container manages not only the instantiation of your objects (beans), but also the wiring up of collaborators (or dependencies). If you want to inject (for example) an HTTP request scoped bean into another bean of a longer-lived scope, you may choose to inject an AOP proxy in place of the scoped bean. That is, you need to inject a proxy object that exposes the same public interface as the scoped object but that can also retrieve the real target object from the relevant scope (such as an HTTP request) and delegate method calls onto the real object.
+
+SpringIOC容器可以通过注入AOP代理的方式，
+让一个短生命周期的Bean（如request）注入到一个长生命周期的Bean（如singleton）中
+```xml
+    <!-- an HTTP Session-scoped bean exposed as a proxy -->
+    <bean id="userPreferences" class="com.foo.UserPreferences" scope="session">
+        <!-- instructs the container to proxy the surrounding bean -->
+        <aop:scoped-proxy/>
+    </bean>
+
+    <!-- a singleton-scoped bean injected with a proxy to the above bean -->
+    <bean id="userService" class="com.foo.SimpleUserService">
+        <!-- a reference to the proxied userPreferences bean -->
+        <property name="userPreferences" ref="userPreferences"/>
+    </bean>
+```
+#### 对FactoryBean的实现类配置aop:scoped-proxy
+返回的是FactoryBean实现类本身，作用域也是FactoryBean本身，而不是工厂Bean的getObject获取的对象。
+
+#### 选择代理类型
+默认是CGLIB代理，如果想使用JDK代理，配置如下
+```xml
+<!-- DefaultUserPreferences implements the UserPreferences interface -->
+<bean id="userPreferences" class="com.foo.DefaultUserPreferences" scope="session">
+    <aop:scoped-proxy proxy-target-class="false"/>
+</bean>
+
+<bean id="userManager" class="com.foo.UserManager">
+    <property name="userPreferences" ref="userPreferences"/>
+</bean>
+```
+
+[<-](#top)
+### 7.5.5 自定义作用域<span id="7.5.5"></span>
+  Bean作用域技术是可扩展的，能够自定义作用域，甚至重新定义已经存在的作用域。
+但是不能覆盖内置的单例和原型范围。  
+  通过实现org.springframework.beans.factory.config.Scope接口自定义作用域。
+  Scope接口有四个方法：
+  1. 获取对象
+    `Object get(String name, ObjectFactory objectFactory)`
+  2. 从作用域移除对象，返回该对象
+    `Object remove(String name)`
+  3. 注册作用域对象销毁后的回调方法
+   `void registerDestructionCallback(String name, Runnable destructionCallback)`
+  4. 获取作用域标识
+    `String getConversationId()`
+
+#### 使用自定义作用域
+1. 方法1：使用ConfigurableBeanFactory接口的
+`void registerScope(String scopeName, Scope scope);`方法
+```java
+Scope threadScope = new SimpleThreadScope();
+beanFactory.registerScope("thread", threadScope);
+```
+2. 方法2：使用xml配置
+```xml
+<bean class="org.springframework.beans.factory.config.CustomScopeConfigurer">
+        <property name="scopes">
+            <map>
+                <entry key="thread">
+                    <bean class="org.springframework.context.support.SimpleThreadScope"/>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="bar" class="x.y.Bar" scope="thread">
+        <property name="name" value="Rick"/>
+        <aop:scoped-proxy/>
+    </bean>
+
+    <bean id="foo" class="x.y.Foo">
+        <property name="bar" ref="bar"/>
+    </bean>
+```
