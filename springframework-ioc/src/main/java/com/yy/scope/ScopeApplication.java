@@ -30,6 +30,8 @@ public class ScopeApplication {
         public void run() {
             Foo foo = context.getBean("foo", Foo.class);
             System.out.println(foo);
+            Foo foo2 = context.getBean("foo", Foo.class);
+            System.out.println(foo2);
         }
     }
 }

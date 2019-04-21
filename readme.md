@@ -21,6 +21,8 @@
    - [7.5.3 单例Bean依赖原型Bean](#7.5.3)
    - [7.5.4 Request,Session,Global Session,Application,WebSocket Scopes](#7.5.4)
    - [7.5.5 自定义作用域](#7.5.5)
+- [7.6 自定义Bean特性](#7.6)
+   - [7.6.1 LifeCycle回调](#7.6.1)
 
 
 # 7. IOC容器<span id="7"></span>
@@ -716,3 +718,208 @@ beanFactory.registerScope("thread", threadScope);
         <property name="bar" ref="bar"/>
     </bean>
 ```
+[<-](#top)
+## 7.6 自定义Bean性质<span id="7.6"></span>
+
+
+### 7.6.1 Lifecycle回调<span id="7.6.1"></span>
+
+实现Bean实现InitializingBean和DisposableBean接口，
+Spring容器会在Bean初始化时调用afterPropertiesSet()方法，
+在Bean销毁时调用destroy()方法。
+
+另外Spring还提供了BeanPostProcessor接口处理回调[7.8](#7.8)。
+本章还介绍了LifeCycle接口让对象参与容器的启动和关闭。
+
+注：也可使用JSR-250@PostConstruct和@PreDestroy注解，让Bean不与Spring耦合。
+
+1. 实现InitializingBean和DisposableBean接口
+```java
+public class ExampleBean implements InitializingBean, DisposableBean {
+
+    private String name;
+
+    public void destroy() throws Exception {
+        System.out.println("ExampleBean destroy call");
+    }
+
+    public void afterPropertiesSet() throws Exception {
+        System.out.println("ExampleBean afterPropertiesSet call " + this);
+    }
+}
+```
+```xml
+    <bean id="exampleBean" class="com.yy.lifecycle.ExampleBean">
+       <property name="name" value="foo"/>
+   </bean>
+```
+
+2. 使用JSR-250@PostConstruct和@PreDestroy注解
+```java
+public class ExampleBean2 {
+
+    @PostConstruct
+    private void init() {
+        System.out.println("ExampleBean2 init " + this);
+
+    }
+
+    @PreDestroy
+    private void destroy() {
+        System.out.println("ExampleBean2 destroy");
+    }
+}
+```
+```xml
+    <context:component-scan base-package="com.yy.lifecycle"/>
+    <bean id="exampleBean2" class="com.yy.lifecycle.ExampleBean2"/>
+```
+
+3. xml配置bean属性init-method和destroy-method
+```java
+public class ExampleBean3 {
+
+    private void init() {
+        System.out.println("ExampleBean3 init " + this);
+    }
+
+    private void destroy() {
+        System.out.println("ExampleBean3 destroy");
+    }
+}
+```
+```xml
+    <bean id="exampleBean3" class="com.yy.lifecycle.ExampleBean3" init-method="init" destroy-method="destroy">
+
+    </bean>
+```
+
+4. 在beans上配置default-init-method和default-destroy-method
+```java
+public class ExampleBean4 {
+
+    private void defaultInit() {
+        System.out.println("ExampleBean4 use default init");
+    }
+
+    private void defaultDestroy() {
+        System.out.println("ExampleBean4 use default destroy");
+    }
+}
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+       default-init-method="defaultInit" default-destroy-method="defaultDestroy"
+>
+    <bean id="exampleBean4" class="com.yy.lifecycle.ExampleBean4">
+    </bean>
+</beans>
+```
+>The Spring container guarantees that a configured initialization callback is called immediately after a bean is supplied with all dependencies. Thus the initialization callback is called on the raw bean reference, which means that AOP interceptors and so forth are not yet applied to the bean. A target bean is fully created first, then an AOP proxy (for example) with its interceptor chain is applied. If the target bean and the proxy are defined separately, your code can even interact with the raw target bean, bypassing the proxy. Hence, it would be inconsistent to apply the interceptors to the init method, because doing so would couple the lifecycle of the target bean with its proxy/interceptors and leave strange semantics when your code interacts directly to the raw target bean.
+
+Spring容器保证为Bean提供所有依赖后立即调用配置的初始化回调方法。
+意味着AOP拦截器尚未应用于Bean，初始化回调方法直接作用于Bean。
+
+#### 组合lifecycle技术
+同时使用多种lifecycle回调方法
+1. 方法名相同时，回调方法只会执行一次。
+2. 方法名不同时，回调方法按照下面的顺序执行。
+- 初始化方法
+   - @PostConstruct方法
+   - InitializingBean的afterPropertiesSet方法
+   - 自定义xml配置的init方法
+- 销毁方法
+   - @PreDestroy方法
+   - DisposableBean的destroy方法
+   - 自定义xml配置的destroy方法
+
+
+#### 启动和关闭回调方法
+
+LifeCycle接口为有自己生命周期需求的对象定义了必要的方法。
+
+```java
+public interface Lifecycle {
+
+    void start();
+
+    void stop();
+
+    boolean isRunning();
+}
+```
+>Any Spring-managed object may implement that interface. Then, when the ApplicationContext itself receives start and stop signals, e.g. for a stop/restart scenario at runtime, it will cascade those calls to all Lifecycle implementations defined within that context. It does this by delegating to a LifecycleProcessor
+```java
+public interface LifecycleProcessor extends Lifecycle {
+
+    void onRefresh();
+
+    void onClose();
+}
+```
+每个Spring管理的对象都可以实现Lifecycle接口，当ApplicationContext收到启动/关闭信号时，
+它会调用所有当前容器中Lifecycle实例的对应方法，通过LifecycleProcessor代理。
+
+*注意：Lifecycle接口只是显示启动/停止通知的简单合约，并不意味着在上下文刷新时自动调用它的start方法。
+
+#### 实现org.springframework.context.SmartLifecycle接口
+
+实现SmartLifecycle接口能够对bean自动启动进行细粒度控制，包括启动阶段。
+*注意：在Bean销毁前不能保证stop调用。在常规关闭时，所有Lifecycle Bean将在传播一般destroy回调前首先收到停止通知；
+但是在上下文生命周期中的热刷新或中止刷新尝试时，只会调用destroy方法。
+
+虽然通过depends-on能控制bean之间的初始化顺序，但是有时候这种直接依赖关系是未知的。
+所以SmartLifecycle接口继承了Phased接口，通过Phased接口的getPhase()方法确定Lifecycle接口的start方法顺序。
+getPhase返回的值越小，启动(start)越早，关闭(stop)越晚。
+实现LifeCycle接口的实例默认getPhase返回0。
+
+
+LifecycleProcessor调用容器里的所有Lifecycle的stop(Runnable run)回调方法时，默认每个阶段(根据getPhase分组)超时时间30秒。
+可以通过在容器中定义名为lifecycleProcessor的Bean来覆盖DefaultLifecycleProcessor，并修改超时时间。
+```xml
+<bean id="lifecycleProcessor" class="org.springframework.context.support.DefaultLifecycleProcessor">
+    <!-- timeout value in milliseconds -->
+    <property name="timeoutPerShutdownPhase" value="10000"/>
+</bean>
+```
+
+在单例Bean都实例化后执行
+ org.springframework.context.support.AbstractApplicationContext
+  -> refresh
+   -> finishRefresh
+    org.springframework.context.support.DefaultLifecycleProcessor
+     -> onRefresh()
+      -> startBeans(true)
+      执行isAutoStartup=true的SmartLifecycle的start方法，按照getPhase从小到大的顺序依次执行
+
+
+#### 优雅关闭非web应用的SpringIOC容器
+
+Spring基于Web的ApplicationContext已经是优雅关闭SpringIOC容器了。
+
+非Web的ApplicationContext需要注册shutdown hook
+```java
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public final class Boot {
+
+    public static void main(final String[] args) throws Exception {
+        ConfigurableApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml");
+
+        // add a shutdown hook for the above context...
+        ctx.registerShutdownHook();
+
+        // app runs here...
+
+        // main method exits, hook is called prior to the app shutting down...
+    }
+}
+```
+

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+       default-init-method="defaultInit" default-destroy-method="defaultDestroy"
+>
+    <bean id="mySmartLifecycleBean" class="com.yy.lifecycle.MySmartLifecycleBean"></bean>
+
+   <bean id="exampleBean" class="com.yy.lifecycle.ExampleBean">
+       <property name="name" value="foo"/>
+   </bean>
+    <context:component-scan base-package="com.yy.lifecycle"/>
+    <bean id="exampleBean2" class="com.yy.lifecycle.ExampleBean2"/>
+    <bean id="exampleBean3" class="com.yy.lifecycle.ExampleBean3" init-method="init" destroy-method="destroy">
+        <property name="name" value="bar"/>
+    </bean>
+    <bean id="exampleBean4" class="com.yy.lifecycle.ExampleBean4">
+
+    </bean>
+
+</beans>
