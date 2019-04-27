@@ -10,6 +10,7 @@ public class CustomBeanFactoryPostProcessor implements BeanFactoryPostProcessor 
     private static BeanFactory beanFactory;
 
     public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
+        System.out.println("BeanFactoryPostProcessor postProcessBeanFactory called");
         if (beanFactory == null) {
             beanFactory = configurableListableBeanFactory;
         }

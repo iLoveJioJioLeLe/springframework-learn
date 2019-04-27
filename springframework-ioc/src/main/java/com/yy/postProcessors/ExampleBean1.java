@@ -1,12 +1,15 @@
 package com.yy.postProcessors;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-public class ExampleBean1 implements InitializingBean, DisposableBean {
+public class ExampleBean1 implements InitializingBean, DisposableBean, ApplicationContextAware {
 
     private String name;
 
@@ -38,5 +41,9 @@ public class ExampleBean1 implements InitializingBean, DisposableBean {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        System.out.println("ExampleBean1 applicationContextAware" + applicationContext);
     }
 }

@@ -923,3 +923,67 @@ public final class Boot {
 }
 ```
 
+### 7.6.2 ApplicationContextAware和BeanNameAware
+
+ApplicationContext为ApplicationContextAware接口的实现类提供了当前ApplicationContext的引用。
+也可以通过constructor和byType自动装配applicationContext依赖。
+```java
+public interface ApplicationContextAware {
+
+    void setApplicationContext(ApplicationContext applicationContext) throws BeansException;
+}
+```
+ApplicationContext为BeanNameAware接口的实现类提供了当前接口实现类在IOC容器内的name引用。
+这个回调方法在所有bean的普通属性注入后执行，
+在初始化方法执行前执行。
+```java
+public interface BeanNameAware {
+
+    void setBeanName(String name) throws BeansException;
+}
+```
+BeanFactoryAware
+普通的bean属性注入
+BeanNameAware
+ApplicationContextAware
+自定义BeanPostProcessor(before)
+init方法
+自定义BeanPostProcessor(after)
+
+### 7.6.3 其他Aware接口
+
+| Name | InjectDependency | Explain in... |
+| - | - | - |
+| ApplicationContextAware | Declaring ApplicationContext | [7.6.2](#7.6.2) |
+| ApplicationEventPublisherAware | Event publisher of the enclosing ApplicationContext | [7.15](#7.15) |
+| BeanClassLoaderAware | Class loader used to load the bean classes. | [7.3.2](#7.3.2) |
+| BeanFactoryAware | Declaring BeanFactory | [7.6.2](#7.6.2) |
+| BeanNameAware | Name of the declaring bean | [7.6.2](#7.6.2) |
+| BootstrapContextAware | Resource adapter BootstrapContext the container runs in. Typically available only in JCA aware ApplicationContexts | [32](#32) |
+| LoadTimeWeaverAware | Defined weaver for processing class definition at load time | [11.8.4](#11.8.4) |
+| MessageSourceAware | Configured strategy for resolving messages (with support for parametrization and internationalization) | [7.15](#7.15) |
+| NotificationPublisherAware | Spring JMX notification publisher | [31.7](#31.7) |
+| PortletConfigAware | Current PortletConfig the container runs in. Valid only in a web-aware Spring ApplicationContext | [25](#25) |
+| PortletContextAware | Current PortletContext the container runs in. Valid only in a web-aware Spring ApplicationContext | [25](#25) |
+| ResourceLoaderAware | Configured loader for low-level access to resources | [8](#8) |
+| ServletConfigAware | Current ServletConfig the container runs in. Valid only in a web-aware Spring ApplicationContext | [22](#22) |
+| ServletContextAware | Current ServletContext the container runs in. Valid only in a web-aware Spring ApplicationContext | [22](#22) |
+
+                        
+
+                       
+
+                        
+
+                        
+
+  
+
+                       
+                               
+
+                       
+
+                        
+
+                  
