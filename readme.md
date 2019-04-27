@@ -23,7 +23,9 @@
    - [7.5.5 自定义作用域](#7.5.5)
 - [7.6 自定义Bean特性](#7.6)
    - [7.6.1 LifeCycle回调](#7.6.1)
-
+   - [7.6.2 ApplicationContextAware和BeanNameAware](#7.6.2)
+   - [7.6.3 其他Aware接口](#7.6.3)
+- [7.7 ](#7.7)
 
 # 7. IOC容器<span id="7"></span>
 
@@ -923,7 +925,8 @@ public final class Boot {
 }
 ```
 
-### 7.6.2 ApplicationContextAware和BeanNameAware
+[<-](#top)
+### 7.6.2 ApplicationContextAware和BeanNameAware<span id="7.6.2"></span>
 
 ApplicationContext为ApplicationContextAware接口的实现类提供了当前ApplicationContext的引用。
 也可以通过constructor和byType自动装配applicationContext依赖。
@@ -942,15 +945,16 @@ public interface BeanNameAware {
     void setBeanName(String name) throws BeansException;
 }
 ```
-BeanFactoryAware
-普通的bean属性注入
-BeanNameAware
-ApplicationContextAware
-自定义BeanPostProcessor(before)
-init方法
+BeanFactoryAware-
+普通的bean属性注入-
+BeanNameAware-
+ApplicationContextAware-
+自定义BeanPostProcessor(before)-
+init方法-
 自定义BeanPostProcessor(after)
 
-### 7.6.3 其他Aware接口
+[<-](#top)
+### 7.6.3 其他Aware接口<span id="7.6.3"></span>
 
 | Name | InjectDependency | Explain in... |
 | - | - | - |
@@ -970,6 +974,32 @@ init方法
 | ServletContextAware | Current ServletContext the container runs in. Valid only in a web-aware Spring ApplicationContext | [22](#22) |
 
                         
+## 7.7 Bean定义继承
+>If you work with an ApplicationContext interface programmatically, child bean definitions are represented by the ChildBeanDefinition class. Most users do not work with them on this level, instead configuring bean definitions declaratively in something like the ClassPathXmlApplicationContext. When you use XML-based configuration metadata, you indicate a child bean definition by using the parent attribute, specifying the parent bean as the value of this attribute.
+
+```xml
+    <bean id="father" class="com.yy.inheritance.Father">
+        <property name="name" value="foo"/>
+        <property name="age" value="100"/>
+    </bean>
+    <bean id="son" class="com.yy.inheritance.Son" parent="father">
+        <!-- name会继承father -->
+        <property name="age" value="20"/>
+        <property name="email" value="spring.io"/>
+    </bean>
+```
+属性abstract="true"的bean是不能实例化的，只能作为一个模板bean。
+```xml
+    <bean id="father2" abstract="true">
+        <property name="name" value="bar"/>
+        <property name="age" value="99"/>
+    </bean>
+    <bean id="son2" class="com.yy.inheritance.Son" parent="father2">
+        <property name="age" value="19"/>
+        <property name="email" value="springframework"/>
+    </bean>
+```
+
 
                        
 

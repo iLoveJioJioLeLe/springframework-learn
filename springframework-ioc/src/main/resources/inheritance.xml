@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="father" class="com.yy.inheritance.Father">
+        <property name="name" value="foo"/>
+        <property name="age" value="100"/>
+    </bean>
+    <bean id="son" class="com.yy.inheritance.Son" parent="father">
+        <!-- name会继承father -->
+        <property name="age" value="20"/>
+        <property name="email" value="spring.io"/>
+    </bean>
+    <bean id="father2" abstract="true">
+        <property name="name" value="bar"/>
+        <property name="age" value="99"/>
+    </bean>
+    <bean id="son2" class="com.yy.inheritance.Son" parent="father2">
+        <property name="age" value="19"/>
+        <property name="email" value="springframework"/>
+    </bean>
+</beans>
