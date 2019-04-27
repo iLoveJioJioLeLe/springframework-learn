@@ -12,4 +12,19 @@
     <bean id="bean2" class="com.yy.postProcessors.ExampleBean2"/>
     <bean class="com.yy.postProcessors.CustomBeanFactoryPostProcessor"/>
     <context:component-scan base-package="com.yy.postProcessors"/>
+
+    <bean id="dataSource" class="com.yy.postProcessors.propertyPlaceholder.MyDataSource">
+        <property name="url" value="*jdbc.url*"/>
+        <property name="username" value="*jdbc.username*"/>
+        <property name="password" value="*jdbc.password*"/>
+    </bean>
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations" value="classpath:test.properties"/>
+        <property name="placeholderPrefix" value="*"/>
+        <property name="placeholderSuffix" value="*"/>
+    </bean>
+    <bean class="org.springframework.beans.factory.config.PropertyOverrideConfigurer">
+        <property name="locations" value="classpath:override.properties"/>
+    </bean>
+    <!--<context:property-placeholder location="test.properties"/>-->
 </beans>

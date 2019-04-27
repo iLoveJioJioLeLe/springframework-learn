@@ -14,6 +14,7 @@ public class CustomBeanFactoryPostProcessor implements BeanFactoryPostProcessor 
         if (beanFactory == null) {
             beanFactory = configurableListableBeanFactory;
         }
+//        ExampleBean1 bean1 = beanFactory.getBean("bean1", ExampleBean1.class);
     }
 
     public static <T> T getBean(String name, Class<T> clazz) {

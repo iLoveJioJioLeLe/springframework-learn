@@ -974,7 +974,7 @@ init方法-
 | ServletContextAware | Current ServletContext the container runs in. Valid only in a web-aware Spring ApplicationContext | [22](#22) |
 
                         
-## 7.7 Bean定义继承
+## 7.7 Bean定义继承<span id="7.7"></span>
 >If you work with an ApplicationContext interface programmatically, child bean definitions are represented by the ChildBeanDefinition class. Most users do not work with them on this level, instead configuring bean definitions declaratively in something like the ClassPathXmlApplicationContext. When you use XML-based configuration metadata, you indicate a child bean definition by using the parent attribute, specifying the parent bean as the value of this attribute.
 
 ```xml
@@ -1015,19 +1015,103 @@ child bean会继承的有
 - singleton
 - lazy init
 
-                       
+[<-](#top)
+## 7.8 容器扩展点Container Extension Points<span id="7.8"></span>
+                   
+### 7.8.1 使用BeanPostProcessor自定义Bean<span id="7.8.1"></span>
+```java
+public interface BeanPostProcessor {
+    Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException;
 
+    Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException;
+}
+```
+- BeanPostProcessor接口定义了您可以实现的回调方法，以提供您自己的（或覆盖容器的默认）实例化逻辑，依赖关系解析逻辑等。
+- 可以配置多个BeanPostProcessor实例，通过实现Ordered接口来设置顺序。
+- BeanPostProcessor的作用域是单个容器。                   
+- 对于容器中的每个Bean，BeanPostProcessor会在Bean的initialization methods (such as InitializingBean’s afterPropertiesSet() or any declared init method)
+  前执行postProcessBeforeInitialization方法，
+  后执行postProcessAfterInitialization方法。
+- BeanPostProcessor通常会检查回调接口，或者可以使用代理包装Bean。一些SpringAOP基础结构类实现为Bean后处理器，以便提供代理包装逻辑。
+- ApplicationContext自动检测定义在配置元数据中实现BeanPostProcessor接口的实例。
+
+
+[<-](#top) 
+### 7.8.2 通过BeanFactoryPostProcessor自定义配置元数据<span id="7.8.2"></span>
+BeanFactoryPostProcessor与BeanPostProcessor的主要区别是：
+BeanFactoryPostProcessor在bean的配置元数据上操作，也就是说SpringIOC容器允许它读取配置元数据，
+并且可能在容器实例化任何bean之前，改变配置元数据（除了BeanFactoryPostProcessor以外）。
+- 可以配置多个BeanFactoryPostProcessor，通过实现Ordered接口设置顺序
+- 如果在BeanFactoryPostProcessor接口实现类中，使用BeanFactory的getBean方法，会导致Bean提前实例化，引起Bean绕过后处理过程。如：BeanPostProcessor
+  （测试发现@PostConstruct也绕过了，只执行了xml配置的init方法和InitializingBean的初始化方法）
+- BeanFactoryPostProcessor的作用域是per-container
+- Bean(Factory)PostProcessor会被立即实例化，即使定义了`<beans default-lazy-init="true"></beans>`
+
+                    
+#### Example:PropertyPlaceholderConfigurer   
+```xml
+    <bean id="dataSource" class="com.yy.postProcessors.propertyPlaceholder.MyDataSource">
+        <property name="url" value="*jdbc.url*"/>
+        <property name="username" value="*jdbc.username*"/>
+        <property name="password" value="*jdbc.password*"/>
+    </bean>
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations" value="classpath:test.properties"/>
+        <property name="placeholderPrefix" value="*"/>
+        <property name="placeholderSuffix" value="*"/>
+    </bean>
+```      
+```properties
+jdbc.url=com.yy.jdbc
+jdbc.username=yy
+jdbc.password=123456
+```
+-  PropertyPlaceholderConfigurer在运行时替换对象的属性
+-  Spring2.5支持`<context:property-placeholder location="classpath:com/foo/jdbc.properties"/>`方式配置
+-  PropertyPlaceholderConfigurer不只搜索指定的properties文件，默认情况下它也会搜索JavaSystem properties文件，如果它找不到你指定的文件。
+> systemPropertiesMode
+> never (0): Never check system properties
+ fallback (1): Check system properties if not resolvable in the specified properties files. This is the default.
+ override (2): Check system properties first, before trying the specified properties files. This allows system properties to override any other property source.
+
+      
+#### Example:PropertyOverrideConfigurer
                         
+类似于PropertyPlaceholderConfigurer，
+不同点：原始定义可以具有默认值，或者根本不具有bean属性的值。 
+如果重写的Properties文件没有某个bean属性的条目，则使用默认的上下文定义。
 
-                        
+并且properties的格式是：
+beanName.properties=value
 
-  
+test.properties
+```properties
+jdbc.url=com.yy.jdbc
+jdbc.username=yy
+jdbc.password=123456
+```
+override.properties
+```properties
+dataSource.driver=com.yy.jdbc.driver
+dataSource.url=yy.jdbc://localhost:3306/test
+dataSource.password=098765
+```
+```xml
+<bean id="dataSource" class="com.yy.postProcessors.propertyPlaceholder.MyDataSource">
+    <property name="url" value="*jdbc.url*"/>
+    <property name="username" value="*jdbc.username*"/>
+    <property name="password" value="*jdbc.password*"/>
+</bean>
+<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="locations" value="classpath:test.properties"/>
+    <property name="placeholderPrefix" value="*"/>
+    <property name="placeholderSuffix" value="*"/>
+</bean>
+<bean class="org.springframework.beans.factory.config.PropertyOverrideConfigurer">
+    <property name="locations" value="classpath:override.properties"/>
+</bean>
+```
+结果：{"driver":"com.yy.jdbc.driver","url":"yy.jdbc://localhost:3306/test","username":"yy","password":"098765"}
 
-                       
-                               
-
-                       
-
-                        
 
                   
