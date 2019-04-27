@@ -34,6 +34,10 @@ public class Son {
         this.email = email;
     }
 
+    public void hello() {
+        System.out.println("this is son " + this.getName());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("{");

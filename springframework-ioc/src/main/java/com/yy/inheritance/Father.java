@@ -24,6 +24,10 @@ public class Father {
         this.age = age;
     }
 
+    public void hello() {
+        System.out.println("im father " + this.name);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("{");

@@ -25,8 +25,8 @@
    - [7.6.1 LifeCycle回调](#7.6.1)
    - [7.6.2 ApplicationContextAware和BeanNameAware](#7.6.2)
    - [7.6.3 其他Aware接口](#7.6.3)
-- [7.7 ](#7.7)
-
+- [7.7 Bean定义继承](#7.7)
+- 
 # 7. IOC容器<span id="7"></span>
 
 ## 7.1 介绍IOC容器和Beans<span id="7.1"></span>
@@ -999,7 +999,21 @@ init方法-
         <property name="email" value="springframework"/>
     </bean>
 ```
+child bean会继承的有
+- scope
+- constructor argument values
+- property values
+- method overrides from parent
 
+特别的：Any scope, initialization method, destroy method, and/or static factory method settings that you specify will override the corresponding parent settings.
+父亲的init方法，子类必须重写，不然报错。
+`BeanDefinitionValidationException: Couldn't find an init method named 'hello' on bean with name 'son'`
+不会继承的有
+- depends on
+- autowire mode
+- dependency check
+- singleton
+- lazy init
 
                        
 
