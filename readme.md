@@ -1113,5 +1113,21 @@ dataSource.password=098765
 ```
 结果：{"driver":"com.yy.jdbc.driver","url":"yy.jdbc://localhost:3306/test","username":"yy","password":"098765"}
 
+[<-](#top) 
+### 7.8.3 通过FactoryBean自定义实例化逻辑Customizing instantiation logic with a FactoryBean<span id="7.8.3"></span>
+如果通过xml配置来创建Bean的逻辑很复杂，可以通过实现org.springframework.beans.factory.FactoryBean接口来处理Bean的复杂实例化逻辑。
+```java
+public interface FactoryBean<T> {
+    // 返回这个工厂创建的实例对象
+    T getObject() throws Exception;
 
-                  
+    // 返回工厂创建的实例对象的class对象
+    Class<?> getObjectType();
+
+    // true：单例，false：原型
+    boolean isSingleton();
+}
+```
+通过context.getBean("myBean")获取工厂创建的实例对象;
+通过context.getBean("&myBean")获取工厂本身对象;
+
