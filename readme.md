@@ -39,6 +39,30 @@
    - [7.9.6 自定义自动装配配置CustomAutowireConfigurer](#7.9.6)
    - [7.9.7 @Resource](#7.9.7)
    - [7.9.8 @PostConstruct和@PreDestroy](#7.9.8)
+- [7.10 类路径扫描和管理组件Classpath scanning and managed components](#7.10)
+   - [7.10.1 @Component and further stereotype annotations](#7.10.1)
+   - [7.10.2 元注解 Meta-annotations](#7.10.2)
+   - [7.10.3 自动探测类和注册Bean定义 Automatically detecting classes and registering bean definitions](#7.10.3)
+   - [7.10.4 使用过滤器自定义扫描 Using filters to customize scanning](#7.10.4)
+   - [7.10.5 使用组件定义bean源数据 Defining bean metadata within components](#7.10.5)
+   - [7.10.6 Naming autodetected components](#7.10.6)
+   - [7.10.7 为自动探测组件提供作用域 Providing a scope for autodetected components](#7.10.7)
+   - [7.10.8 用注解提供限定符元数据 Providing qualifier metadata with annotations](#7.10.8)
+- [7.11 使用JSR-330标准注解](#7.11)
+   - [7.11.1 通过@Inject和@Named依赖注入](#7.11.1)
+   - [7.11.2 @Name和@ManagedBean等同于@Component](#7.11.2)
+   - [7.11.3 JSR-330标准注解的局限性](#7.11.3)
+- [7.12 Java-based容器配置](#7.12)
+   - [7.12.1 基础概念：@Bean和@Configuration](#7.12.1)
+   - [7.12.2 使用AnnotationConfigApplicationContext实例化Spring容器](#7.12.2)
+   - [7.12.3 使用@Bean注解](#7.12.3)
+   - [7.12.4 使用@Configuration注解](#7.12.4)
+   - [7.12.5 组合Java-based配置](#7.12.5)
+   
+   
+   
+   
+   
    
 # 7. IOC容器<span id="7"></span>
 
@@ -1653,6 +1677,255 @@ public class MovieRecommender {
 
 
 
+[<-](#top)
+## 7.10 类路径扫描和管理组件Classpath scanning and managed components<span id="7.10"></span>
+
+
+
+[<-](#top)
+## 7.10.1 @Component and further stereotype annotations<span id="7.10.1"></span>
+
+@Controller、@Service、@Repository是@Component的典型。
+分别对应Controller层，服务层，持久层。
+
+
+
+[<-](#top)
+## 7.10.2 元注解 Meta-annotations<span id="7.10.2"></span>
+
+Spring提供了很多元注解如：
+1. @Service是被@Component注解的
+2. @RestController是被@Controller和@ResponseBody注解的
+3. @SessionScope是被@Scope注解的
+
+
+
+[<-](#top)
+## 7.10.3 自动探测类和注册Bean定义 Automatically detecting classes and registering bean definitions<span id="7.10.3"></span>
+- @Configuration声明配置类
+- @ComponentScan设置自动扫描注解
+```java
+@Configuration// @Configuration由@Component元注解修饰，用@Component也可以作为配置注入
+//@Component
+@ComponentScan(basePackages = {"com.yy.annotation"})// 扫描com.yy.annotation下的注解
+public class AppConfig {
+}
+
+```
+等同于xml配置，并且component-scan的作用多于annotation-config，所以不用声明annotation-config
+```xml
+<context:component-scan base-package="org.example"/>
+```
+
+```java
+public class JavaConfigApplication {
+    public static void main(String args[]){
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        BaseBean baseBean = context.getBean("baseBean", BaseBean.class);
+        System.out.println(baseBean);
+    }
+}
+```
+[<-](#top)
+## 7.10.4 使用过滤器自定义扫描 Using filters to customize scanning<span id="7.10.4"></span>
+- 默认情况下，被@Component，@Repository，@Service，@Controller或者@Component自定义注解修饰的Bean是候选Bean。
+- 但是，可以通过使用自定义filters来扩展。@ComponentScan添加includeFilters和excludeFilters参数可以包含和排除部分候选Bean。每个filter都需要type和expression属性。
+| 过滤器类型(type) | 示例表达式(expression) | 描述 |
+| - | - | - |
+| annotation(default) | org.example.SomeAnnotation | An annotation to be present at the type level in target components. |
+| assignable | org.example.SomeClass | 对应组件的一个类或接口(可以是子类或实现类) |
+| aspectj | org.example..*Service+ | 匹配目标组件的AspectJ表达式 |
+| regex正则 | org\.example\.Default.* | 匹配目标组件类名的正则表达式 |
+| custom自定义 | org.example.MyTypeFilter | 自定义org.springframework.core.type.TypeFilter实现类 |
+
+示例：包含Stub和Repository结尾的类，排除Repository注解
+```java
+@Configuration
+@ComponentScan(basePackages = "org.example",
+        includeFilters = @Filter(type = FilterType.REGEX, pattern = ".*Stub.*Repository"),
+        excludeFilters = @Filter(Repository.class))
+public class AppConfig {
+    ...
+}
+```
+等同于xml
+```xml
+<beans>
+    <context:component-scan base-package="org.example">
+        <context:include-filter type="regex"
+                expression=".*Stub.*Repository"/>
+        <context:exclude-filter type="annotation"
+                expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+</beans>
+```
+
+           
+
+            
+
+              
+
+[<-](#top)
+## 7.10.5 使用组件定义bean源数据 Defining bean metadata within components<span id="7.10.5"></span>
+- Spring component也可以在容器里定义bean的元数据，通过@Bean注解定义在@Configuration类里
+
+```java
+@Configuration
+public class FactoryMethodComponent {
+
+    @Bean
+//    @Qualifier("aBook")
+//    @Lazy
+//    @Scope(value = "singleton")
+    public Book myBook() {
+        return new Book();
+    }
+}
+```
+
+- 在@Component类里配置@Bean和在@Configuration类里配置@Bean方法，效果不同：
+
+
+@Component类不会被CGLIB代理，而@Configuration类会被GCLIB代理，原因在于ConfigurationClassPostProcessor专门处理@Configuration注解的类。
+-> org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanFactory
+-> org.springframework.context.annotation.ConfigurationClassPostProcessor.enhanceConfigurationClasses
+-> org.springframework.context.annotation.ConfigurationClassEnhancer.enhance
+
+
+被CGLIB代理的类的@Bean方法会走
+-> org.springframework.context.annotation.ConfigurationClassEnhancer.BeanMethodInterceptor.intercept方法拦截
+-> org.springframework.context.annotation.ConfigurationClassEnhancer.BeanMethodInterceptor.obtainBeanInstanceFromFactory最后会从BeanFactory中取已有的Bean
+```java
+@Configuration
+public class FactoryMethodComponent {
+
+    @Bean
+    public Book myBook() {
+        return new Book();
+    }
+
+    @Bean
+    public BookStore myBookStore() {
+        BookStore bookStore = new BookStore();
+        bookStore.setBook(myBook());//
+        return bookStore;
+    }
+}
+```
+```java
+public class JavaConfigApplication {
+    public static void main(String args[]){
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        Book myBook = context.getBean("myBook", Book.class);
+        System.out.println(myBook);// com.yy.annotation.beans.Book@3527942a
+        BookStore bookStore = context.getBean("myBookStore", BookStore.class);
+        System.out.println(bookStore);// {"book":com.yy.annotation.beans.Book@3527942a}
+    }
+}
+```
+而使用@Component
+```java
+@Component
+public class FactoryMethodComponent {
+
+    @Bean
+    public Book myBook() {
+        return new Book();
+    }
+
+    @Bean
+    public BookStore myBookStore() {
+        BookStore bookStore = new BookStore();
+        bookStore.setBook(myBook());//
+        return bookStore;
+    }
+}
+```
+```java
+   public class JavaConfigApplication {
+       public static void main(String args[]){
+           ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+           Book myBook = context.getBean("myBook", Book.class);
+           System.out.println(myBook);// com.yy.annotation.beans.Book@2c1b194a
+           BookStore bookStore = context.getBean("myBookStore", BookStore.class);
+           System.out.println(bookStore);// {"book":com.yy.annotation.beans.Book@4dbb42b7}
+       }
+   }
+```
+- static@Bean方法，允许在不创建包含配置类作为实例的情况下调用他们。
+  这在定义后处理器Bean时有意义，如：BeanFactoryPostProcessor或BeanPostProcessor。
+  这些bean在容器生命周期的早期初始化，应该避免触发配置的其他部分。
+- static@Bean方法不会被容器拦截，即使在@Configuration类里，CGLIB子类也不能重写静态方法。
+  这导致，这个静态@Bean方法调用另一个@Bean方法具有标准Java语义，从而返回一个独立的实例。
+- @Configuration类里的@Bean方法不能是private或final的，因为要被CGLIB子类重写。
+
+
+
+[<-](#top)
+## 7.10.6 自动探测组件命名 Naming autodetected components<span id="7.10.6"></span>
+
+- 当component被自动探测到时，将生成beanName
+- 通过BeanNameGenerator生成beanName
+- 默认情况，任意Spring stereotype annotation(@Component, @Repository, @Service, and @Controller)
+  会使用注解里的value属性值来定义beanName
+- 如果没有name属性，使用类名首字母小写作为beanName
+- 可以通过实现BeanNameGenerator来自定义beanName生成策略
+```java
+@Configuration
+@ComponentScan(basePackages = "org.example", nameGenerator = MyNameGenerator.class)
+public class AppConfig {
+    ...
+}
+```
+等同于
+```xml
+<beans>
+    <context:component-scan base-package="org.example"
+        name-generator="org.example.MyNameGenerator" />
+</beans>
+```
+
+
+
+[<-](#top)
+## 7.10.7 为自动探测组件提供作用域 Providing a scope for autodetected components<span id="7.10.7"></span>
+
+- 给自动探测配置自定义作用域解析，需要实现ScopeMetadataResolver接口
+```java
+@Configuration
+@ComponentScan(basePackages = "org.example", scopeResolver = MyScopeResolver.class)
+public class AppConfig {
+    ...
+}
+```
+等同于xml
+```xml
+<beans>
+    <context:component-scan base-package="org.example" scope-resolver="org.example.MyScopeResolver"/>
+</beans>
+```
+
+- 当使用非单例作用域时，可能使用scoped-proxy代理[7.5.4](#7.5.4)
+```java
+@Configuration
+@ComponentScan(basePackages = "org.example", scopedProxy = ScopedProxyMode.INTERFACES)
+public class AppConfig {
+    ...
+}
+```
+等同于
+```xml
+<beans>
+    <context:component-scan base-package="org.example" scoped-proxy="interfaces"/>
+</beans>
+```
+
+
+
+[<-](#top)
+## 7.10.8 用注解提供限定符元数据 Providing qualifier metadata with annotations<span id="7.10.8"></span>
+详见[7.9.4](#7.9.4)
 
 
 

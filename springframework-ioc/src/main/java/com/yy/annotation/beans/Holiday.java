@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 /**
  * Created by 2019/5/2.
  */
-@Component
+//@Component
 public class Holiday {
 
     @Autowired(required = false)
