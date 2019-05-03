@@ -26,7 +26,20 @@
    - [7.6.2 ApplicationContextAware和BeanNameAware](#7.6.2)
    - [7.6.3 其他Aware接口](#7.6.3)
 - [7.7 Bean定义继承](#7.7)
-- 
+- [7.8 容器扩展点Container Extension Points](#7.8)
+   - [7.8.1 使用BeanPostProcessor自定义Bean](#7.8.1)
+   - [7.8.2 通过BeanFactoryPostProcessor自定义配置元数据](#7.8.2)
+   - [7.8.3 通过FactoryBean自定义实例化逻辑Customizing instantiation logic with a FactoryBean](#7.8.3)
+- [7.9 基于注解的容器配置](#7.9)
+   - [7.9.1 @Required](#7.9.1)
+   - [7.9.2 @Autowired](#7.9.2)
+   - [7.9.3 通过@Primary微调自动装配](#7.9.3)
+   - [7.9.4 通过qualifiers微调自动装配](#7.9.4)
+   - [7.9.5 使用泛型作为自动装配限定符(qualifiers)](#7.9.5)
+   - [7.9.6 自定义自动装配配置CustomAutowireConfigurer](#7.9.6)
+   - [7.9.7 @Resource](#7.9.7)
+   - [7.9.8 @PostConstruct和@PreDestroy](#7.9.8)
+   
 # 7. IOC容器<span id="7"></span>
 
 ## 7.1 介绍IOC容器和Beans<span id="7.1"></span>
@@ -1130,4 +1143,516 @@ public interface FactoryBean<T> {
 ```
 通过context.getBean("myBean")获取工厂创建的实例对象;
 通过context.getBean("&myBean")获取工厂本身对象;
+
+[<-](#top)
+## 7.9 基于注解的重启配置<span id="7.9"></span>
+
+1.  annotation配置在xml配置前注入，xml配置会覆盖annotation配置
+2.  <context:annotation-config/> 查询bean上的注解在与他声明的同一application context中，也就是作用域是每context
+3.  <context:annotation-config/> 注册了AutowiredAnnotationBeanPostProcessor, CommonAnnotationBeanPostProcessor, PersistenceAnnotationBeanPostProcessor, as well as the aforementioned RequiredAnnotationBeanPostProcessor.
+
+
+[<-](#top)
+### 7.9.1 @Required<span id="7.9.1"></span>
+```java
+public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Required
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+
+    // ...
+}
+```
+此注释仅表示受影响的bean属性必须在配置时填充，通过bean定义中的显式属性值或通过自动装配填充。 如果尚未填充受影响的bean属性，容器将引发异常。
+BeanInitializationException
+```sh
+Caused by: org.springframework.beans.factory.BeanInitializationException: Property 'name' is required for bean 'requiredBean'
+	at org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor.postProcessPropertyValues(RequiredAnnotationBeanPostProcessor.java:155)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1268)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:551)
+	... 11 more
+```
+
+
+[<-](#top)
+### 7.9.2 @Autowired<span id="7.9.2"></span>
+> JSR 330’s @Inject annotation can be used in place of Spring’s @Autowired annotation in the examples below. See here for more details.
+JSR 330的@Inject注解可以替代@Autowired  
+
+@Autowired属性required作用和@Required注解一样，默认情况为true
+
+1. 用于构造方法
+在4.3版本后 如果一个Bean只有一个构造方法，那么@Autowired都可以省略
+```java
+public class MovieRecommender {
+
+    private final CustomerPreferenceDao customerPreferenceDao;
+
+    @Autowired
+    public MovieRecommender(CustomerPreferenceDao customerPreferenceDao) {
+        this.customerPreferenceDao = customerPreferenceDao;
+    }
+
+    // ...
+}
+```
+2. 用于setter方法
+```java
+public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Autowired
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+
+    // ...
+}
+```
+3. 注入数组/List/Set
+- 可以通过@Order(org.springframework.core.annotation.Order)注解控制注入顺序，数字越小，越先注入
+- 可以通过@Priority(javax.annotation.Priority)注解控制注入顺序，数字越小，越先注入
+- 但是不改变单例Bean的启动顺序，它是由@DependsOn决定的
+- @Priority不能作用于方法，所以@Bean配置的Bean需要通过@Order来控制注入顺序
+```java
+public class MovieRecommender {
+
+    @Autowired
+    private MovieCatalog[] movieCatalogs;
+
+    // ...
+}
+```
+4. 注入Map
+key是BeanName
+value是对应的Bean
+```java
+public class MovieRecommender {
+
+    private Map<String, MovieCatalog> movieCatalogs;
+
+    @Autowired
+    public void setMovieCatalogs(Map<String, MovieCatalog> movieCatalogs) {
+        this.movieCatalogs = movieCatalogs;
+    }
+
+    // ...
+}
+```
+
+5. 通过Java8的java.util.Optional配置non-required依赖注入
+```java
+public class SimpleMovieLister {
+
+    @Autowired
+    public void setMovieFinder(Optional<MovieFinder> movieFinder) {
+        ...
+    }
+}
+```
+
+6. 通过@Autowired注入已知可解析的依赖，如：
+BeanFactory, ApplicationContext, Environment, ResourceLoader, ApplicationEventPublisher, and MessageSource. These interfaces and their extended interfaces, such as ConfigurableApplicationContext or ResourcePatternResolver, are automatically resolved, with no special setup necessary.
+
+7. 
+@Autowired，@Inject，@Resource和@Value注释
+由Spring BeanPostProcessor实现处理，
+这反过来意味着您不能在自己的BeanPostProcessor或BeanFactoryPostProcessor类型（如果有）中应用这些注释。
+必须通过XML或使用Spring @Bean方法显式地“连接”这些类型。
+
+
+
+
+[<-](#top)
+### 7.9.3 通过@Primary微调自动装配<span id="7.9.3"></span>
+由于通过类型自动装配会导致多个candidates候选Bean，一种解决途径是通过@Primary注解。
+当一个Bean被@Primary注解修饰后，在同类型的候选Bean里，它将被作为自动装配的对象。
+```java
+@Configuration
+public class MovieConfiguration {
+
+    @Bean
+    @Primary
+    public MovieCatalog firstMovieCatalog() { ... }
+
+    @Bean
+    public MovieCatalog secondMovieCatalog() { ... }
+
+    // ...
+}
+```
+```java
+public class MovieRecommender {
+
+    // autowire firstMovieCatalog
+    @Autowired
+    private MovieCatalog movieCatalog;
+
+    // ...
+}
+```
+同样的在xml中配置bean的primary属性也是这样的效果
+```xml
+    <bean class="example.SimpleMovieCatalog" primary="true">
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean id="movieRecommender" class="example.MovieRecommender"/>
+```
+
+[<-](#top)
+### 7.9.4 通过qualifiers微调自动装配<span id="7.9.4"></span>
+- @Qualifier可以用于成员变量、方法参数、构造方法参数
+- 同样也可以用于注入集合类型如Set
+- 如果想要通过name注入依赖，考虑使用JSR-250@Resource注解
+```java
+public class MovieRecommender {
+
+    @Autowired
+    @Qualifier("main")// 同样被@Qualifier("main")限定符修饰的Bean将被注入
+    private MovieCatalog movieCatalog;
+
+    // ...
+}
+```
+类似的xml配置
+```xml
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier value="main"/>
+
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier value="action"/>
+
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean id="movieRecommender" class="example.MovieRecommender"/>
+```
+#### 自定义限定符注解，简化配置
+
+1. 带value方法的自定义限定符注解
+```java
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier
+public @interface Genre {
+
+    String value();
+}
+```
+```java
+public class MovieRecommender {
+
+    @Autowired
+    @Genre("Action")
+    private MovieCatalog actionCatalog;
+
+    private MovieCatalog comedyCatalog;
+
+    @Autowired
+    public void setComedyCatalog(@Genre("Comedy") MovieCatalog comedyCatalog) {
+        this.comedyCatalog = comedyCatalog;
+    }
+
+    // ...
+}
+```
+```xml
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier type="Genre" value="Action"/>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier type="example.Genre" value="Comedy"/>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean id="movieRecommender" class="example.MovieRecommender"/>
+```
+
+
+2. 不带value方法的自定义限定符注解
+
+```java
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier
+public @interface Offline {
+
+}
+```
+```java
+public class MovieRecommender {
+
+    @Autowired
+    @Offline// autowired SimpleMovieCatalog
+    private MovieCatalog offlineCatalog;
+
+    // ...
+}
+```
+```xml
+<bean class="example.SimpleMovieCatalog">
+    <qualifier type="Offline"/>
+    <!-- inject any dependencies required by this bean -->
+</bean>
+```
+
+3. 多方法自定义限定符注解
+```java
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+@Qualifier
+public @interface MovieQualifier {
+
+    String genre();
+
+    Format format();
+}
+```
+```java
+public enum Format {
+    VHS, DVD, BLURAY
+}
+```
+```java
+public class MovieRecommender {
+
+    @Autowired
+    @MovieQualifier(format=Format.VHS, genre="Action")
+    private MovieCatalog actionVhsCatalog;
+
+    @Autowired
+    @MovieQualifier(format=Format.VHS, genre="Comedy")
+    private MovieCatalog comedyVhsCatalog;
+
+    @Autowired
+    @MovieQualifier(format=Format.DVD, genre="Action")
+    private MovieCatalog actionDvdCatalog;
+
+    @Autowired
+    @MovieQualifier(format=Format.BLURAY, genre="Comedy")
+    private MovieCatalog comedyBluRayCatalog;
+
+    // ...
+}
+```
+可以使用qualifier子元素，也可使用meta子元素，qualifier优先
+```xml
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier type="MovieQualifier">
+            <attribute key="format" value="VHS"/>
+            <attribute key="genre" value="Action"/>
+        </qualifier>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <qualifier type="MovieQualifier">
+            <attribute key="format" value="VHS"/>
+            <attribute key="genre" value="Comedy"/>
+        </qualifier>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <meta key="format" value="DVD"/>
+        <meta key="genre" value="Action"/>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+
+    <bean class="example.SimpleMovieCatalog">
+        <meta key="format" value="BLURAY"/>
+        <meta key="genre" value="Comedy"/>
+        <!-- inject any dependencies required by this bean -->
+    </bean>
+```
+
+
+[<-](#top)
+### 7.9.5 使用泛型作为自动装配限定符(qualifiers)<span id="7.9.5"></span>
+
+1.  一个通用接口
+```java
+public interface KillerStore<T> {
+}
+```
+2. 两个接口实现类
+```java
+@Component
+public class Book implements KillerStore<Book> {
+    public void print() {
+       System.out.println("book");
+    }
+}
+```
+```java
+@Component
+public class Game implements KillerStore<Game> {
+    public void print() {
+       System.out.println("game");
+    }
+}
+```
+3. 装配
+```java
+@Component
+public class Holiday {
+
+    @Autowired
+    private KillerStore<Book> killerStore;
+
+    public KillerStore<Book> getKillerStore() {
+        return killerStore;
+    }
+
+    public void setKillerStore(KillerStore<Book> killerStore) {
+        this.killerStore = killerStore;
+    }
+}
+```
+4. 测试
+```java
+public class Application {
+    public static void main(String args[]){
+        ApplicationContext context = new ClassPathXmlApplicationContext("annotation/annotation.xml");
+        Holiday holiday = context.getBean("holiday", Holiday.class);
+        System.out.println(holiday);
+        Book book = (Book)holiday.getKillerStore();
+        book.print();
+    }
+}
+```
+
+[<-](#top)
+### 7.9.6 自定义自动装配配置CustomAutowireConfigurer<span id="7.9.6"></span>
+CustomAutowireConfigurer实现了BeanFactoryPostProcessor，允许注册自定义qualifier注解，即使它没有被Spring的@Qualifier注解修饰。
+```java
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CustomQualifier {
+    String value();
+}
+```
+```xml
+    <bean id="customAutowireConfigurer"
+          class="org.springframework.beans.factory.annotation.CustomAutowireConfigurer">
+        <property name="customQualifierTypes">
+            <set>
+                <value>com.yy.annotation.annotations.CustomQualifier</value>
+            </set>
+        </property>
+    </bean>
+```
+```java
+@Component
+public class Holiday {
+
+    @Autowired
+    @CustomQualifier("second")// autowired Book
+    private TimeKiller timeKiller;
+    
+    // setter
+}
+```
+```java
+@CustomQualifier("second")
+public class Book implements TimeKiller{
+}
+```
+AutowireCandidateResolver通过以下的几种方式来决定自动装载的候选Bean：
+
+- Bean定义中的autowire-candidate的值
+- 任何<beans/>标签中定义的default-autowire-candidates的值
+- @Qualifier注解和任何在CustomAutowireConfigurer中定义的自定义的限定符注解
+
+
+当多个Bean限定为自动装载的候选时， 前文中提到的primary属性是优先考虑的。
+
+
+
+
+
+[<-](#top)
+### 7.9.7 @Resource<span id="7.9.7"></span>
+Spring支持JSR-250标准中的@Resource注解来注入实例变量或setter方法。
+@Resource通过Bean的名字进行自动装配
+```java
+public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Resource(name="myMovieFinder")// 自动装配beanName = myMovieFinder的Bean实例
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+
+}
+```
+如果没有明确指定名字，默认名字是实例变量的变量名或setter方法名。
+```java
+public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Resource// 自动注入beanName = "movieFinder"的Bean实例
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+}
+```
+在没有明确指定name属性时(默认名字也未匹配Bean时)，与@Autowired类似，@Resource寻找primary根据类型Bean匹配，并解析已知依赖如：
+BeanFactory, ApplicationContext, ResourceLoader, ApplicationEventPublisher, and MessageSource interfaces。
+```java
+public class MovieRecommender {
+
+    @Resource// 优先查找beanName=customerPreferenceDao的Bean实例，然后根据类型匹配
+    private CustomerPreferenceDao customerPreferenceDao;
+
+    @Resource// 自动注入ApplicationContext
+    private ApplicationContext context;
+
+    public MovieRecommender() {
+    }
+
+    // ...
+
+}
+```
+
+
+
+
+
+[<-](#top)
+### 7.9.8 @PostConstruct和@PreDestroy<span id="7.9.8"></span>
+
+生命周期回调函数注解，执行顺序
+- 初始化方法
+   - @PostConstruct方法
+   - InitializingBean的afterPropertiesSet方法
+   - 自定义xml配置的init方法
+- 销毁方法
+   - @PreDestroy方法
+   - DisposableBean的destroy方法
+   - 自定义xml配置的destroy方法
+
+
+
+
+
+
 

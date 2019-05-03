@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans-4.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+    <context:component-scan base-package="com.yy.annotation"/>
+    <bean id="baseBean" class="com.yy.annotation.BaseBean">
+        <property name="name" value="456"/>
+    </bean>
+    <!--<bean id="book" class="com.yy.annotation.beans.Book">-->
+        <!--<qualifier type="com.yy.annotation.annotations.TimeKiller" value="second"/>-->
+    <!--</bean>-->
+    <!--<bean id="game" class="com.yy.annotation.beans.Game">-->
+        <!--<qualifier type="com.yy.annotation.annotations.TimeKiller" value="main"/>-->
+    <!--</bean>-->
+    <!--<bean id="book1" class="com.yy.annotation.beans.Book">-->
+        <!--<qualifier type="com.yy.annotation.annotations.Good"/>-->
+    <!--</bean>-->
+    <!--<bean id="game1" class="com.yy.annotation.beans.Game">-->
+        <!--<qualifier type="com.yy.annotation.annotations.Bad"/>-->
+    <!--</bean>-->
+    <bean id="customAutowireConfigurer"
+          class="org.springframework.beans.factory.annotation.CustomAutowireConfigurer">
+        <property name="customQualifierTypes">
+            <set>
+                <value>com.yy.annotation.annotations.CustomQualifier</value>
+            </set>
+        </property>
+    </bean>
+</beans>
