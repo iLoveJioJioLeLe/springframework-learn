@@ -1730,6 +1730,8 @@ public class JavaConfigApplication {
 ## 7.10.4 使用过滤器自定义扫描 Using filters to customize scanning<span id="7.10.4"></span>
 - 默认情况下，被@Component，@Repository，@Service，@Controller或者@Component自定义注解修饰的Bean是候选Bean。
 - 但是，可以通过使用自定义filters来扩展。@ComponentScan添加includeFilters和excludeFilters参数可以包含和排除部分候选Bean。每个filter都需要type和expression属性。
+
+
 | 过滤器类型(type) | 示例表达式(expression) | 描述 |
 | - | - | - |
 | annotation(default) | org.example.SomeAnnotation | An annotation to be present at the type level in target components. |
