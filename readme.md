@@ -1541,7 +1541,7 @@ public class Application {
 ### 7.9.6 自定义自动装配配置CustomAutowireConfigurer<span id="7.9.6"></span>
 CustomAutowireConfigurer实现了BeanFactoryPostProcessor，允许注册自定义qualifier注解，即使它没有被Spring的@Qualifier注解修饰。
 ```java
-@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CustomQualifier {
     String value();
