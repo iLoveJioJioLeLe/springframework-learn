@@ -1683,7 +1683,7 @@ public class MovieRecommender {
 
 
 [<-](#top)
-## 7.10.1 @Component and further stereotype annotations<span id="7.10.1"></span>
+### 7.10.1 @Component and further stereotype annotations<span id="7.10.1"></span>
 
 @Controller、@Service、@Repository是@Component的典型。
 分别对应Controller层，服务层，持久层。
@@ -1691,7 +1691,7 @@ public class MovieRecommender {
 
 
 [<-](#top)
-## 7.10.2 元注解 Meta-annotations<span id="7.10.2"></span>
+### 7.10.2 元注解 Meta-annotations<span id="7.10.2"></span>
 
 Spring提供了很多元注解如：
 1. @Service是被@Component注解的
@@ -1701,7 +1701,7 @@ Spring提供了很多元注解如：
 
 
 [<-](#top)
-## 7.10.3 自动探测类和注册Bean定义 Automatically detecting classes and registering bean definitions<span id="7.10.3"></span>
+### 7.10.3 自动探测类和注册Bean定义 Automatically detecting classes and registering bean definitions<span id="7.10.3"></span>
 - @Configuration声明配置类
 - @ComponentScan设置自动扫描注解
 ```java
@@ -1727,7 +1727,7 @@ public class JavaConfigApplication {
 }
 ```
 [<-](#top)
-## 7.10.4 使用过滤器自定义扫描 Using filters to customize scanning<span id="7.10.4"></span>
+### 7.10.4 使用过滤器自定义扫描 Using filters to customize scanning<span id="7.10.4"></span>
 - 默认情况下，被@Component，@Repository，@Service，@Controller或者@Component自定义注解修饰的Bean是候选Bean。
 - 但是，可以通过使用自定义filters来扩展。@ComponentScan添加includeFilters和excludeFilters参数可以包含和排除部分候选Bean。每个filter都需要type和expression属性。
 
@@ -1769,7 +1769,7 @@ public class AppConfig {
               
 
 [<-](#top)
-## 7.10.5 使用组件定义bean源数据 Defining bean metadata within components<span id="7.10.5"></span>
+### 7.10.5 使用组件定义bean源数据 Defining bean metadata within components<span id="7.10.5"></span>
 - Spring component也可以在容器里定义bean的元数据，通过@Bean注解定义在@Configuration类里
 
 ```java
@@ -1865,7 +1865,7 @@ public class FactoryMethodComponent {
 
 
 [<-](#top)
-## 7.10.6 自动探测组件命名 Naming autodetected components<span id="7.10.6"></span>
+### 7.10.6 自动探测组件命名 Naming autodetected components<span id="7.10.6"></span>
 
 - 当component被自动探测到时，将生成beanName
 - 通过BeanNameGenerator生成beanName
@@ -1891,7 +1891,7 @@ public class AppConfig {
 
 
 [<-](#top)
-## 7.10.7 为自动探测组件提供作用域 Providing a scope for autodetected components<span id="7.10.7"></span>
+### 7.10.7 为自动探测组件提供作用域 Providing a scope for autodetected components<span id="7.10.7"></span>
 
 - 给自动探测配置自定义作用域解析，需要实现ScopeMetadataResolver接口
 ```java
@@ -1926,8 +1926,24 @@ public class AppConfig {
 
 
 [<-](#top)
-## 7.10.8 用注解提供限定符元数据 Providing qualifier metadata with annotations<span id="7.10.8"></span>
+### 7.10.8 用注解提供限定符元数据 Providing qualifier metadata with annotations<span id="7.10.8"></span>
 详见[7.9.4](#7.9.4)
+
+
+[<-](#top)
+## 7.13 环境抽象 Environment abstraction<span id="7.13"></span>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
