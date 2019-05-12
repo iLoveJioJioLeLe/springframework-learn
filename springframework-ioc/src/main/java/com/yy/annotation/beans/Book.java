@@ -17,4 +17,8 @@ public class Book implements TimeKiller, KillerStore<Book> {
     public void print() {
         System.out.println("book");
     }
+
+    public void close() {
+        System.out.println("Book close method called");
+    }
 }
