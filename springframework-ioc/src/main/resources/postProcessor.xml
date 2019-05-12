@@ -19,7 +19,7 @@
         <property name="password" value="*jdbc.password*"/>
     </bean>
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="locations" value="classpath:test.properties"/>
+        <property name="locations" value="classpath:${env}.properties"/>
         <property name="placeholderPrefix" value="*"/>
         <property name="placeholderSuffix" value="*"/>
     </bean>

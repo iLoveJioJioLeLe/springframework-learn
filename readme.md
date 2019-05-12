@@ -2717,27 +2717,246 @@ public static void main(String[] args) {
 }
 ```
 
-
-
-
-
-
-
-
 [<-](#top)
 ## 7.13 环境抽象 Environment abstraction<span id="7.13"></span>
 
+- Environment主要包含两方面application environment：profiles和properties
+- profile是一个命名的逻辑分组，包含了一些bean定义，Environment负责决定激活哪些profiles
+- properties，如JVM System properties、system environment variables、JNDI、servlet context parameters、ad-hoc Properties objects、Maps等等。Environment提供便捷的接口用于配置property和解析property。
+
+### 7.13.1 bean定义profiles
+- bean定义profiles允许在不同的环境下定义不同的bean，如：开发环境和测试环境的dataSource不同。(也可以通过<import/>+${placeholder}的方式解决，placeholder是配置的系统环境变量或JVM options)
+- @Profile注解允许针对不同环境注册不同的Bean，可以使用在方法上，也可以使用在类上
+```java
+@Configuration
+public class AppConfig {
+
+    @Bean("myDataSource")
+    @Profile("dev")
+    public MyDataSource devDataSource() {
+        MyDataSource dataSource = new MyDataSource();
+        dataSource.setUrl("dev");
+        dataSource.setUsername("devUser");
+        dataSource.setPassword("123");
+        return dataSource;
+    }
+
+    @Bean("myDataSource")
+    @Profile("test")
+    public MyDataSource testDataSource() {
+        MyDataSource dataSource = new MyDataSource();
+        dataSource.setUrl("test");
+        dataSource.setUsername("testUser");
+        dataSource.setPassword("123");
+        return dataSource;
+    }
+}
+```
+
+- @Profile也可以作为元注解
+```java
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Profile("test")
+public @interface Test {
+}
+```
+```java
+@Configuration
+public class AppConfig {
+
+    @Bean("myDataSource")
+    @Profile("dev")
+    @Test // 自定义注解和元注解同时出现，取元注解
+    public MyDataSource devDataSource() {
+        MyDataSource dataSource = new MyDataSource();
+        dataSource.setUrl("dev");
+        dataSource.setUsername("devUser");
+        dataSource.setPassword("123");
+        return dataSource;
+    }
+}
+```
+
+
+- @Profile({"p1", "p2"})表示当p1或p2环境时生效，@Profile({"p1", "!p2"})表示当p1或非p2时生效
+
+- 使用xml定义profiles
+```xml
+<beans profile="development"
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xsi:schemaLocation="...">
+
+    <jdbc:embedded-database id="dataSource">
+        <jdbc:script location="classpath:com/bank/config/sql/schema.sql"/>
+        <jdbc:script location="classpath:com/bank/config/sql/test-data.sql"/>
+    </jdbc:embedded-database>
+</beans>
+```
+```xml
+<beans profile="production"
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:jee="http://www.springframework.org/schema/jee"
+    xsi:schemaLocation="...">
+
+    <jee:jndi-lookup id="dataSource" jndi-name="java:comp/env/jdbc/datasource"/>
+</beans>
+```
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xmlns:jee="http://www.springframework.org/schema/jee"
+    xsi:schemaLocation="...">
+
+    <!-- other bean definitions -->
+
+    <beans profile="development">
+        <jdbc:embedded-database id="dataSource">
+            <jdbc:script location="classpath:com/bank/config/sql/schema.sql"/>
+            <jdbc:script location="classpath:com/bank/config/sql/test-data.sql"/>
+        </jdbc:embedded-database>
+    </beans>
+
+    <beans profile="production">
+        <jee:jndi-lookup id="dataSource" jndi-name="java:comp/env/jdbc/datasource"/>
+    </beans>
+</beans>
+```
+
+#### 激活一个profile
+- 方式一，使用EnvironmentAPI
+```java
+AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+ctx.getEnvironment().setActiveProfiles("development");
+ctx.register(SomeConfig.class, StandaloneDataConfig.class, JndiDataConfig.class);
+ctx.refresh();
+```
+- 方式二，`-Dspring.profiles.active="profile1,profile2"`
+- 方式三，在单元测试里使用@ActiveProfiles注解
+
+
+#### 默认profile
+- 默认profile是default
+- 设置默认profile的方式：
+	- Environment.setDefaultProfiles()
+	- -Dspring.profiles.default
 
 
 
 
+### 7.13.2 PropertySource
+
+- Environment提供了property sources的搜索操作，StandardEnvironment有两个PropertySource对象，一个是JVM system properties，一个是系统变量
+```java
+public class Application {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        // 系统变量
+        // System.getenv()
+        System.out.println(context.getEnvironment().getSystemEnvironment());
+        // JVM system properties 
+        // System.getProperties()
+        System.out.println(context.getEnvironment().getSystemProperties());
+    }
+}
+```
+
+- env.getProperty("foo")的优先级
+   - ServletConfig parameters (if applicable, e.g. in case of a DispatcherServlet context)
+   - ServletContext parameters (web.xml context-param entries)
+   - JNDI environment variables ("java:comp/env/" entries)
+   - JVM system properties ("-D" command-line arguments)
+   - JVM system environment (operating system environment variables)
+
+- 自定义PropertySource
+```java
+public class MyPropertySource extends PropertySource {
+
+    private static final Map<String, String> properties = new HashMap<String, String>();
+
+    static {
+        properties.put("foo", "hello foo");
+        properties.put("bar", "hello bar");
+    }
+    public MyPropertySource() {
+        super("");
+    }
+    public MyPropertySource(String name, Object source) {
+        super(name, source);
+    }
+
+    public Object getProperty(String name) {
+        return properties.get(name);
+    }
+}
+```
+```java
+public class Application {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+
+        MutablePropertySources sources = context.getEnvironment().getPropertySources();
+        sources.addFirst(new MyPropertySource("foo"));
+        System.out.println(context.getEnvironment().getProperty("bar"));
+    }
+}
+```
+
+### 7.13.3 @PropertySource
+
+- @PropertySource注解能够将PropertySource加入到Spring的Environment中
+```java
+@Configuration
+@PropertySource("classpath:/com/myco/app.properties")
+public class AppConfig {
+
+    @Autowired
+    Environment env;
+
+    @Bean
+    public TestBean testBean() {
+        TestBean testBean = new TestBean();
+        testBean.setName(env.getProperty("testbean.name"));// test.name = xxx defind in app.properties
+        return testBean;
+    }
+}
+```
+
+- ${...}占位符会被解析为Environment中已经存在property
+```java
+@Configuration
+@PropertySource("classpath:/com/${my.placeholder:default/path}/app.properties")
+public class AppConfig {
+
+    @Autowired
+    Environment env;
+
+    @Bean
+    public TestBean testBean() {
+        TestBean testBean = new TestBean();
+        testBean.setName(env.getProperty("testbean.name"));
+        return testBean;
+    }
+}
+```
+e
+- ${my.placeholder:default/path}如果未解析到my.placeholder，会使用default/path
 
 
 
 
+### 7.13.4 Statement中的占位符解析
 
-
-
-
+- 只要Environment中有自定义的property，那么statement中就能通过占位符解析
+```xml
+<beans>
+    <import resource="com/bank/service/${customer}-config.xml"/>
+</beans>
+```
 
 
