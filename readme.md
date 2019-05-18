@@ -2960,3 +2960,216 @@ e
 ```
 
 
+
+## 7.14 注册LoadTimeWeaver
+Spring使用LoadTimeWeaver在将类加载到Java虚拟机（JVM）时动态转换类。
+ApplicationContext中的任何bean都可以实现LoadTimeWeaverAware，从而接收对load-time weaver实例的引用。
+```java
+@Configuration
+@EnableLoadTimeWeaving
+public class AppConfig {
+}
+```
+```xml
+<beans>
+    <context:load-time-weaver/>
+</beans>
+```
+
+## 7.15 Additional capabilities of the ApplicationContext
+
+- i18n，MessageSource接口
+- resources例如URLs和files，ResourceLoader接口
+- ApplicationListener接口，ApplicationEventPublisher接口
+- 加载多个context，允许每个context的关注点在特定的层面上，例如web层，通过HierarchicalBeanFactory接口
+
+
+### 7.15.1 使用MessageSource国际化
+
+- 当ApplicatonContext加载后，自动搜索BeanName为messageSource的MessageSource类型Bean
+- 如果找到了这样的bean，所有MessageSource的接口方法都被这个bean实例代理
+- 如果没找到，ApplicationContext会从父容器找同名同类型的bean
+- 如果还是没找到，则使用DelegatingMessageSource代理所有MessageSource接口的方法
+- Spring提供了两个MessageSource实现，ResourceBundleMessageSource和StaticMessageSource。StaticMessageSource极少使用，提供了编程方式添加messages，ResourceBundleMessageSource如下示例。
+
+```xml
+<beans>
+
+    <bean id="messageSource"
+          class="org.springframework.context.support.ResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <value>messagesource.format</value>
+                <value>messagesource.exceptions</value>
+            </list>
+        </property>
+    </bean>
+
+</beans>
+```
+```properties
+# exceptions.properties
+argument.required=The {0} argument is required.
+```
+```properties
+# format_zh_CN.properties
+message=\u8fd9\u662f\u4e2d\u6587\u0021
+```
+```properties
+# format_en_US.properties
+message=Alligators rock!
+```
+```java
+ public static void main(String args[]){
+        MessageSource resources = new ClassPathXmlApplicationContext("messagesource/messagesource.xml");
+        String messageZhCN = resources.getMessage("message", null, "Default", null);
+        System.out.println(messageZhCN);// 这是中文!
+        String messageEnUS = resources.getMessage("message", null, "Default", Locale.US);
+        System.out.println(messageEnUS);// Alligators rock!
+        String message1 = resources.getMessage("message1", null, "im default message", null);
+        System.out.println(message1);// im default message
+        String message2 = resources.getMessage("argument.required", new Object[]{"UserName"}, "im default message", null);
+        System.out.println(message2);// The UserName argument is required.
+    }
+ ```
+
+- 可以实现MessageSourceAware接口，获取MessageSource的引用
+- ReloadableResourceBundleMessageSource提供了额外的功能：1 支持加载除了classpath以外的资源文件 2 支持热加载资源文件
+
+### 7.15.2 标准自定义事件
+- event handling是通过ApplicationEvent和ApplicationListener接口处理的
+
+- Spring内建的事件
+| Event | Explanation |
+| - | - |
+| ContextRefreshedEvent | 当ApplicationContext初始化完成或刷新后发布，ConfigurableApplicationContext.refresh()方法 |
+| ContextStartedEvent | 当ApplicationContext启动完成后发布，ConfigurableApplicationContext.start()方法 | 
+| ContextStoppedEvent | 当ApplicationContext停止后发布，ConfigurableApplicationContext.stop()方法|
+| ContextClosedEvent | 当ApplicationContext关闭后，ConfigurableApplicationContext.close()方法 |
+| RequestHandledEvent | 当一个http请求service()方法结束后发布，这个事件仅当使用DispatcherServlet时才启用 |
+
+- 自定义事件实现
+```java
+// 事件对象
+public class MyEvent extends ApplicationEvent {
+
+    private String param;
+
+    public MyEvent(Object source) {
+        super(source);
+    }
+
+    public MyEvent(Object source, String param) {
+        super(source);
+        this.param = param;
+    }
+
+    public String getParam() {
+        return param;
+    }
+
+    public void setParam(String param) {
+        this.param = param;
+    }
+}
+```
+```java
+// 事件监听对象
+@Component
+public class MyListener implements ApplicationListener<MyEvent> {
+    public void onApplicationEvent(MyEvent event) {
+        System.out.println("MyListener receive MyEvent param : "+event.getParam());
+    }
+}
+```
+```java
+// 事件监听对象2
+@Component
+public class MyListenerAnother implements ApplicationListener<MyEvent> {
+    public void onApplicationEvent(MyEvent event) {
+        System.out.println("MyListenerAnother receive MyEvent param : "+event.getParam());
+    }
+}
+
+```
+```java
+// 事件发布服务
+@Component
+public class MyPublisher implements ApplicationEventPublisherAware {
+
+    private ApplicationEventPublisher publisher;
+
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        this.publisher = applicationEventPublisher;
+    }
+
+    public void publishEvent(ApplicationEvent event) {
+        publisher.publishEvent(event);
+    }
+}
+```
+```java
+// 启动类
+@ComponentScan("com.yy.event")
+public class Bootstrap {
+    public static void main(String args[]) throws Exception{
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Bootstrap.class);
+        MyPublisher myPublisher = context.getBean("myPublisher", MyPublisher.class);
+        myPublisher.publishEvent(new MyEvent(new Object(), "hello"));
+    }
+}
+```
+```bash
+MyListener receive MyEvent param : hello
+MyListenerAnother receive MyEvent param : hello
+```
+
+- 注意publishEvent()是单线程同步方法，它会阻塞直到所有listener完成事件处理，如果有其他策略需求，参考ApplicationEventMulticaster
+
+#### 基于注解的事件监听
+
+```java
+// 监听两个事件
+    @EventListener({ContextStartedEvent.class, MyEvent.class})
+    public void handleEvent(ApplicationEvent event) {
+        System.out.println(event);
+    }
+    // 监听两个事件
+    @EventListener({ContextRefreshedEvent.class, MyEvent.class})
+    public void handleEvent2(ApplicationEvent event) {
+        System.out.println(event);
+    }
+
+    // 监听事件，并发送另一个事件，由返回类型确定
+    @EventListener({ContextRefreshedEvent.class, MyEvent.class})
+    public MyEvent2 handleEvent3(ApplicationEvent event) {
+        System.out.println(event);
+        return new MyEvent2(this);
+    }
+
+    @EventListener({MyEvent2.class})
+    public void handleEvent4(ApplicationEvent event) {
+        System.out.println(event);
+    }
+
+    // 异步监听
+    @EventListener({MyEvent2.class})
+    @Async
+    public void handleEvent5(ApplicationEvent event) {
+        System.out.println(event);
+    }
+    // 监听顺序
+    @EventListener
+	@Order(42)
+	public void processBlackListEvent(BlackListEvent event) {
+	    // notify appropriate parties via notificationAddress...
+	}
+```
+
+
+
+
+
+
+
+
