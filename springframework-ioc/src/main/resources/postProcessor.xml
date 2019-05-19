@@ -5,6 +5,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         https://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
+    <bean class="com.yy.postProcessors.MyBeanFactoryAware"/>
     <bean class="com.yy.postProcessors.CustomBeanPostProcessor"/>
     <bean id="bean1" class="com.yy.postProcessors.ExampleBean1" init-method="init">
         <property name="name" value="xxx"/>

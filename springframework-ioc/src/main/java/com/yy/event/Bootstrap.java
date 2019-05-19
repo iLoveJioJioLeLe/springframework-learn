@@ -12,5 +12,6 @@ public class Bootstrap {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Bootstrap.class);
         MyPublisher myPublisher = context.getBean("myPublisher", MyPublisher.class);
         myPublisher.publishEvent(new MyEvent(myPublisher, "hello"));
+        myPublisher.publishEvent(new EntityCreatedEvent(new Person()));
     }
 }

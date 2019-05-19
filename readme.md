@@ -58,7 +58,19 @@
    - [7.12.3 使用@Bean注解](#7.12.3)
    - [7.12.4 使用@Configuration注解](#7.12.4)
    - [7.12.5 组合Java-based配置](#7.12.5)
-   
+- [7.13 Environment](#7.13)
+   - [7.13.1 Bean定义profiles](#7.13.1)
+   - [7.13.2 PropertySource](#7.13.2)
+   - [7.13.3 @PropertySource](#7.13.3)
+   - [7.13.4 Placeholder resolution in statements](#7.13.4)
+- [7.14 LoadTimeWeaver](#7.14)
+- [7.15 ApplicationContext额外功能](#7.15)
+   - [7.15.1 MessageSource国际化](#7.15.1)
+   - [7.15.2 标准自定义事件](#7.15.2)
+   - [7.15.3 Resources](#7.15.3)
+   - [7.15.4 web应用便捷的ApplicationContext实例化](#7.15.4)
+   - [7.15.5 用JavaEE rar文件发布SpringApplicationContext](#7.15.5)
+- [7.16 The BeanFactory](#7.16)   
    
    
    
@@ -2976,7 +2988,7 @@ public class AppConfig {
 </beans>
 ```
 
-## 7.15 Additional capabilities of the ApplicationContext
+## 7.15 Additional capabilities of the ApplicationContext<span id="7.15"></span>
 
 - i18n，MessageSource接口
 - resources例如URLs和files，ResourceLoader接口
@@ -2984,7 +2996,7 @@ public class AppConfig {
 - 加载多个context，允许每个context的关注点在特定的层面上，例如web层，通过HierarchicalBeanFactory接口
 
 
-### 7.15.1 使用MessageSource国际化
+### 7.15.1 使用MessageSource国际化<span id="7.15.1"></span>
 
 - 当ApplicatonContext加载后，自动搜索BeanName为messageSource的MessageSource类型Bean
 - 如果找到了这样的bean，所有MessageSource的接口方法都被这个bean实例代理
@@ -3036,7 +3048,7 @@ message=Alligators rock!
 - 可以实现MessageSourceAware接口，获取MessageSource的引用
 - ReloadableResourceBundleMessageSource提供了额外的功能：1 支持加载除了classpath以外的资源文件 2 支持热加载资源文件
 
-### 7.15.2 标准自定义事件
+### 7.15.2 标准自定义事件<span id="7.15.2"></span>
 - event handling是通过ApplicationEvent和ApplicationListener接口处理的
 
 - Spring内建的事件
@@ -3123,6 +3135,23 @@ public class Bootstrap {
 MyListener receive MyEvent param : hello
 MyListenerAnother receive MyEvent param : hello
 ```
+- 通用事件
+```java
+public class EntityCreatedEvent<T> extends ApplicationEvent {
+
+    public EntityCreatedEvent(T entity) {
+        super(entity);
+    }
+
+}
+```
+```java
+    @EventListener
+    // 根据泛型类型监听
+    public void handleEvent6(EntityCreatedEvent<Person> event) {
+        System.out.println(event);
+    }
+```
 
 - 注意publishEvent()是单线程同步方法，它会阻塞直到所有listener完成事件处理，如果有其他策略需求，参考ApplicationEventMulticaster
 
@@ -3168,8 +3197,67 @@ MyListenerAnother receive MyEvent param : hello
 
 
 
+### 7.15.3 Convenient access to low-level resources<span id="7.15.3"></span>
+见第八章 Resources
 
 
+### 7.15.4 便捷初始化ApplicationContext - web应用<span id="7.15.4"></span>
+```xml
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>/WEB-INF/daoContext.xml /WEB-INF/applicationContext.xml</param-value>
+</context-param>
 
+<listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+```
+- contextConfigLocation参数不存在，默认使用/WEB-INF/applicationContext.xml
+- contextConfigLocation参数存在，它会被逗号，分号，空格分割
+
+
+### 7.15.5 用JavaEE rar文件发布Spring ApplicationContext<span id="7.15.5"></span>
+
+
+## 7.16 The BeanFactory<span id="7.16"></span>
+
+
+### 7.16.1 BeanFactory or ApplicationContext?<span id="7.16.1"></span>
+
+- ApplicationContext包含了所有BeanFactory的功能
+- 在诸如GenericApplicationContext实现之类的ApplicationContext中，所有bean都能被侦测到。但是特定的bean如post-processors，特殊的bean不会被DefaultListableBeanFactory侦测到。
+| Feature | BeanFactory | ApplicationContext |
+| - | - | - |
+| Bean instantiation/wiring | YES | YES |
+| Integrated lifecycle management | NO | YES |
+| Automatic BeanPostProcessor | NO | YES |
+| Automatic BeanFactoryPostProcessor | NO | YES |
+| Convenient MessageSource access | NO | YES |
+| Built-in ApplicationEvent publication mechanism | NO | YES |
+
+- 明确注册一个post-processor bean到DefaultListableBeanFactory，需要通过编程方式
+```java
+DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+// populate the factory with bean definitions
+
+// now register any needed BeanPostProcessor instances
+factory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
+factory.addBeanPostProcessor(new MyBeanPostProcessor());
+
+// now start using the factory
+```
+- 要使用BeanFactoryPostProcessor，要调用postProcessBeanFactory方法
+```java
+DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
+reader.loadBeanDefinitions(new FileSystemResource("beans.xml"));
+
+// bring in some property values from a Properties file
+PropertyPlaceholderConfigurer cfg = new PropertyPlaceholderConfigurer();
+cfg.setLocation(new FileSystemResource("jdbc.properties"));
+
+// now actually do the replacement
+cfg.postProcessBeanFactory(factory);
+```
 
 

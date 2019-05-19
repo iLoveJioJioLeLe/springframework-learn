@@ -42,8 +42,8 @@ public class MyAnnotationListener {
         System.out.println(event);
     }
 
-   /* @EventListener({ MyEvent2.class})
-    public void handleEvent6(EntityCreatedEvent<MyEvent2> event) {
+    @EventListener
+    public void handleEvent6(EntityCreatedEvent<Person> event) {
         System.out.println(event);
-    }*/
+    }
 }
