@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/springframework-ioc/springframework-ioc.iml" filepath="$PROJECT_DIR$/springframework-ioc/springframework-ioc.iml" />
       <module fileurl="file://$PROJECT_DIR$/springframework-learn.iml" filepath="$PROJECT_DIR$/springframework-learn.iml" />
+      <module fileurl="file://$PROJECT_DIR$/springframework-resource/springframework-resource.iml" filepath="$PROJECT_DIR$/springframework-resource/springframework-resource.iml" />
     </modules>
   </component>
 </project>

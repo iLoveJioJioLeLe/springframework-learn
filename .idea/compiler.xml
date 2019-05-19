@@ -7,11 +7,13 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="springframework-ioc" />
+        <module name="springframework-resource" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="springframework-ioc" target="1.5" />
       <module name="springframework-learn" target="1.5" />
+      <module name="springframework-resource" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>
