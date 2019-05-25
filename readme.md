@@ -3225,7 +3225,7 @@ public class EntityCreatedEvent<T> extends ApplicationEvent {
 ### 7.16.1 BeanFactory or ApplicationContext?<span id="7.16.1"></span>
 
 - ApplicationContext包含了所有BeanFactory的功能
-- 在诸如GenericApplicationContext实现之类的ApplicationContext中，所有bean都能被侦测到。但是特定的bean如post-processors，特殊的bean不会被DefaultListableBeanFactory侦测到。
+- 在诸如GenericApplicationContext实现之类的ApplicationContext中，所有bean都能被自动注册。但是特定的bean如post-processors，特殊的bean不会被DefaultListableBeanFactory自动注册。
 | Feature | BeanFactory | ApplicationContext |
 | - | - | - |
 | Bean instantiation/wiring | YES | YES |
@@ -3246,7 +3246,7 @@ factory.addBeanPostProcessor(new MyBeanPostProcessor());
 
 // now start using the factory
 ```
-- 要使用BeanFactoryPostProcessor，要调用postProcessBeanFactory方法
+- 编程式创建BeanFactory
 ```java
 DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
 XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
@@ -3260,4 +3260,11 @@ cfg.setLocation(new FileSystemResource("jdbc.properties"));
 cfg.postProcessBeanFactory(factory);
 ```
 
-
+- BeanFactory和ApplicationContext区别
+1. 继承MessageSource，支持国际化
+2. 实现ResourceLoader接口，统一的资源文件访问方式
+3. 容器事件ApplicationEvent支持
+4. 同时加载多个配置文件
+5. 同时载入多个（有继承关系）上下文，使得每个上下文都专注于一个特定层次
+6. BeanFactory是延迟加载bean，只有调用getBean方法才会加载bean，ApplicationContext是预加载bean，在容器启动时创建bean
+7. BeanFactory和ApplicationContext都支持BeanFactoryPostProcessor和BeanPostProcessor，但是BeanFactory需要手动注册，而ApplicationContext是自动注册

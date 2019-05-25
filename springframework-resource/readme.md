@@ -155,6 +155,7 @@ public class MyBean {
 - 如上会从classpath加载资源，但是这个ApplicationContext对应的ResourceLoader还是FileSystemResourceLoader
 
 #### 构造ClassPathXmlApplicationContext实例 - shortcuts
+- 仅使用xml文件名，省略文件路径
 com/
     foo/
         services.xml
@@ -164,3 +165,50 @@ com/
 ApplicationContext ctx = new ClassPathXmlApplicationContext(
     new String[] {"services.xml", "daos.xml"}, MessengerService.class);
 ```       
+
+
+
+### 8.7.3 Wildcards in application context constructor resource paths
+
+
+#### Ant-style Patterns
+- Spring从最后一个不含有通配符的片段获取URL。
+如果URL不是`jar:`或其它变体，`java.io.File`被获取并用于遍历文件系统。
+如果是`jar:`则使用`java.net.JarURLConnection`或手动解析jar URL，遍历jar文件解析通配符。
+```sh
+/WEB-INF/*-context.xml
+  com/mycompany/**/applicationContext.xml
+  file:C:/some/path/*-context.xml
+  classpath:com/mycompany/**/applicationContext.xml
+```
+
+#### classpath*前缀
+- 获取与给定名称匹配的所有类路径资源，然后合并以形成最终的应用程序上下文定义（内部通过ClassLoader.getResources()调用实现）
+- classpath和classpath*的区别（web项目中，classpath是WEB-INF/classes,lib，优先级lib>classes）
+    1. classpath只会到当前工程的class路径中查找文件，classpath*不仅包括class路径，还包括jar包中的class路径。
+    2. classpath只会加载同名文件的第一个，classpath*会加载多个同名文件
+- classpath*和Ant样式结合使用时，像classpath*:*.xml这样的模式无法从jar文件的根目录中检索文件，只能从文件系统的根目录中检索文件。
+- **/applicationContext-*.xml表示任意目录下以applicationContext开头的xml文件
+
+
+
+### 8.7.3 FileSystemResource注意事项
+- FileSystemResource 没有依附 FileSystemApplicationContext，因为FileSystemApplicationContext 并不是一个真正的 `ResourceLoader。FileSystemResource 并没有按约定规则来处理绝对和相对路径。
+- FileSystemResource不管路径是否以"/"开头，都视为相对路径，这意味着以下例子等效。
+```java
+ApplicationContext ctx =
+    new FileSystemXmlApplicationContext("conf/context.xml");
+ApplicationContext ctx =
+    new FileSystemXmlApplicationContext("/conf/context.xml");
+```
+```java
+ctx.getResource("some/resource/path/myTemplate.txt");
+ctx.getResource("/some/resource/path/myTemplate.txt");
+```
+- 如果要使用绝对路径使用"file:"前缀
+`ctx.getResource("file:///some/resource/path/myTemplate.txt");`
+
+
+
+
+
