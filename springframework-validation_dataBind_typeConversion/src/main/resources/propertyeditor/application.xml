@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="person" class="com.yy.springframework.pojo.Person">
+        <property name="address" value="shanghai-pd"/>
+    </bean>
+    <bean id="person2" class="com.yy.springframework.pojo.Person">
+        <property name="age" value="1"/>
+    </bean>
+
+    <context:component-scan base-package="com.yy.springframework.propertyeditor"/>
+    <bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+        <property name="propertyEditorRegistrars">
+            <list>
+                <ref bean="myPropertyEditorRegistrar"/>
+            </list>
+        </property>
+    </bean>
+    <!--<bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">-->
+        <!--<property name="customEditors">-->
+            <!--<map>-->
+                <!--<entry key="com.yy.springframework.pojo.Address" value="com.yy.springframework.propertyeditor.AddressEditor"/>-->
+            <!--</map>-->
+        <!--</property>-->
+    <!--</bean>-->
+</beans>

@@ -11,6 +11,7 @@
     <modules>
         <module>springframework-ioc</module>
         <module>springframework-resource</module>
+        <module>springframework-validation_dataBind_typeConversion</module>
     </modules>
     <dependencies>
         <dependency>
