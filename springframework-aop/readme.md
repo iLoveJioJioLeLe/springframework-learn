@@ -214,7 +214,7 @@ public class Bootstrap {
     
 #### Passing parameters to advice
 ```java
-@Before("com.xyz.myapp.SystemArchitecture.dataAccessOperation() && args(account,..)")
+@Before("com.xyz.myapp.SystemArchitecture.dataAccessOperation() && args(account)")
 public void validateAccount(Account account) {
     // ...
 }
@@ -224,7 +224,7 @@ public void validateAccount(Account account) {
     2. 这使得advice方法获取了join point的入参
 - 第二种获取join point入参的方式
 ```java
-@Pointcut("com.xyz.myapp.SystemArchitecture.dataAccessOperation() && args(account,..)")
+@Pointcut("com.xyz.myapp.SystemArchitecture.dataAccessOperation() && args(account)")
 private void accountDataAccessOperation(Account account) {}
 
 @Before("accountDataAccessOperation(account)")
@@ -232,4 +232,333 @@ public void validateAccount(Account account) {
     // ...
 }
 ```
-- 获取join point上的注解
+#### 获取join point上的注解
+- 自定义注解
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Auditable {
+    AuditCode value();
+}
+```
+- advice方法
+```java
+@Before("com.xyz.lib.Pointcuts.anyPublicMethod() && @annotation(auditable)")
+public void audit(Auditable auditable) {
+    AuditCode code = auditable.value();
+    // ...
+}
+```
+
+
+#### Advice入参和泛型
+- SpringAOP可以处理在类和方法上使用泛型
+- 可以通过实际类型来限制拦截的方法
+- 集合泛型方法会拦截所有集合，无视泛型
+```java
+public interface Sample<T> {
+    void sampleGenericMethod(T param);
+    void sampleGenericCollectionMethod(Collection<T> param);
+}
+```
+```java
+@Before("execution(* ..Sample+.sampleGenericMethod(*)) && args(param)")
+public void beforeSampleMethod(MyType param) {
+    // 这个advice方法会拦截所有Sample的实现类的sampleGenericMethod，且入参类型为MyType的方法
+}
+```
+```java
+@Before("execution(* ..Sample+.sampleGenericCollectionMethod(*)) && args(param)")
+public void beforeSampleMethod(Collection<MyType> param) {
+    // 这个adivce方法会拦截所有Sample的实现类的sampleGenericCollectionMethod，且入参类型为Collection的方法
+    // 所以Collection<MyType> Collection<OtherType>都会被拦截
+    // 需要声明为Collection<?>并手动检查每个元素的类型
+}
+```
+
+#### 决定入参名称
+- advice执行时的参数绑定依赖于pointcut表达式来声明方法签名，因为Java反射不支持参数名称
+- 如果第一个入参是JoinPoint, ProceedingJoinPoint, JoinPoint.StaticPart不需要设置argNames
+```java
+@Before(value="com.xyz.lib.Pointcuts.anyPublicMethod() && target(bean) && @annotation(auditable)",
+        argNames="bean,auditable")
+public void audit(Object bean, Auditable auditable) {
+    AuditCode code = auditable.value();
+    // ... use code and bean
+}
+```
+
+#### Advice顺序
+- SpringAOP与AspectJ的执行顺序一致，在进入Join Point时，优先级越高的advice越先执行，在出Join Point时，优先级越高的advice越后执行。
+- 如果两个Advice声明在两个Aspect中，通过`org.springframework.core.Ordered`指定执行顺序，`Ordered.getValue()`值越小，优先级越高。
+- 如果两个Advice声明在一个Aspect中，无法确定优先级，建议合并为一个Advice
+
+### 11.2.5 Introductions
+- introduction能够用切面让目标对象实现接口，并提供一个默认实现类
+```java
+public interface IdGeneratorService {
+    Long getId();
+}
+```
+```java
+public class DefaultIdGeneratorService implements IdGeneratorService {
+    public Long getId() {
+        Random random = new Random();
+        return random.nextLong();
+    }
+}
+```
+```java
+@Aspect
+@Component
+@Order(1)
+public class IdAspect {
+
+    @DeclareParents(value = "com.yy.springframework.aop.service.*+", defaultImpl = DefaultIdGeneratorService.class)
+    public IdGeneratorService idGeneratorService;
+
+}
+```
+```java
+// Introductions
+        ProductService service = context.getBean(ProductService.class);
+        IdGeneratorService idGeneratorService = (IdGeneratorService) service;
+        System.out.println(idGeneratorService.getId());
+```
+
+### 11.2.6 Aspect instantiation models
+- 默认一个Application context里的aspect都是单例的
+- 可以设置perthis()和pertarget(),perthis表示如果某个类的代理类符合其指定的切面表达式，那么就会为每个符合条件的目标类都声明一个切面实例；pertarget表示如果某个目标类符合其指定的切面表达式，那么就会为每个符合条件的类声明一个切面实例
+```java
+@Aspect("perthis(com.xyz.myapp.SystemArchitecture.businessService())")
+public class MyAspect {
+
+    private int someState;
+
+    @Before(com.xyz.myapp.SystemArchitecture.businessService())
+    public void recordServiceUsage() {
+        // ...
+    }
+
+}
+```
+
+
+## 11.3 Schema-based AOP 支持
+
+### 11.3.1 声明Aspect
+```xml
+<aop:config>
+    <aop:aspect id="myAspect" ref="aBean">
+        ...
+    </aop:aspect>
+</aop:config>
+
+<bean id="aBean" class="...">
+    ...
+</bean>
+```
+
+### 11.3.2 声明pointcut
+```xml
+<aop:config>
+
+    <aop:pointcut id="businessService"
+        expression="execution(* com.xyz.myapp.service.*.*(..))"/>
+
+</aop:config>
+```
+
+### 11.3.3 声明Advice
+#### Before
+```xml
+<aop:aspect id="beforeExample" ref="aBean">
+
+    <aop:before
+        pointcut-ref="dataAccessOperation"
+        method="doAccessCheck"/>
+
+    ...
+
+</aop:aspect>
+```
+#### After returning
+```xml
+<aop:aspect id="afterReturningExample" ref="aBean">
+
+    <aop:after-returning
+        pointcut-ref="dataAccessOperation"
+        returning="retVal"
+        method="doAccessCheck"/>
+
+    ...
+
+</aop:aspect>
+```
+
+#### After throwing
+```xml
+<aop:aspect id="afterThrowingExample" ref="aBean">
+
+    <aop:after-throwing
+        pointcut-ref="dataAccessOperation"
+        throwing="dataAccessEx"
+        method="doRecoveryActions"/>
+
+    ...
+
+</aop:aspect>
+
+```
+#### After(finally) advice
+```xml
+<aop:aspect id="afterFinallyExample" ref="aBean">
+
+    <aop:after
+        pointcut-ref="dataAccessOperation"
+        method="doReleaseLock"/>
+
+    ...
+
+</aop:aspect>
+```
+
+#### Around advice
+```xml
+<aop:aspect id="aroundExample" ref="aBean">
+
+    <aop:around
+        pointcut-ref="businessService"
+        method="doBasicProfiling"/>
+
+    ...
+
+</aop:aspect>
+```
+
+
+#### Advice parameters
+```xml
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- this is the object that will be proxied by Spring's AOP infrastructure -->
+    <bean id="fooService" class="x.y.service.DefaultFooService"/>
+
+    <!-- this is the actual advice itself -->
+    <bean id="profiler" class="x.y.SimpleProfiler"/>
+
+    <aop:config>
+        <aop:aspect ref="profiler">
+
+            <aop:pointcut id="theExecutionOfSomeFooServiceMethod"
+                expression="execution(* x.y.service.FooService.getFoo(String,int))
+                and args(name, age)"/>
+
+            <aop:around pointcut-ref="theExecutionOfSomeFooServiceMethod"
+                method="profile"/>
+
+        </aop:aspect>
+    </aop:config>
+
+</beans>
+```
+
+### 11.3.4 Introductions
+```xml
+<aop:aspect id="usageTrackerAspect" ref="usageTracking">
+
+    <aop:declare-parents
+        types-matching="com.xzy.myapp.service.*+"
+        implement-interface="com.xyz.myapp.service.tracking.UsageTracked"
+        default-impl="com.xyz.myapp.service.tracking.DefaultUsageTracked"/>
+
+    <aop:before
+        pointcut="com.xyz.myapp.SystemArchitecture.businessService()
+            and this(usageTracked)"
+            method="recordUsage"/>
+
+</aop:aspect>
+```
+
+### 11.3.5 Aspect instantiation models
+- schema-defined aspects 只支持单例，不支持perthis和pertarget
+
+### 11.3.6 Advisors
+- advisors概念来自于SpringAOP，在AspectJ中没有等同的概念
+- `<aop:advisor>`与事务advice一同连用
+```xml
+<aop:config>
+
+    <aop:pointcut id="businessService"
+        expression="execution(* com.xyz.myapp.service.*.*(..))"/>
+
+    <aop:advisor
+        pointcut-ref="businessService"
+        advice-ref="tx-advice"/>
+
+</aop:config>
+
+<tx:advice id="tx-advice">
+    <tx:attributes>
+        <tx:method name="*" propagation="REQUIRED"/>
+    </tx:attributes>
+</tx:advice>
+```
+## 11.5 混合aspect类型
+- Spring支持同时使用@AspectJ style aspects using the autoproxying support, schema-defined <aop:aspect> aspects, <aop:advisor> declared advisors and even proxies and interceptors defined using the Spring 1.2 style in the same configuration
+
+
+## 11.6 代理技术
+- 如果目标对象至少实现了一个接口，则会使用JDK动态代理；反之，使用CGLIB代理
+- 如果使用CGLIB代理，final方法不会被拦截
+- 强制使用CGLIB代理的配置方式
+1. schema-defined
+```xml
+<aop:config proxy-target-class="true">
+    <!-- other beans defined here... -->
+</aop:config>
+
+```
+2. @AspectJ autoproxy
+```xml
+<aop:aspectj-autoproxy proxy-target-class="true"/>
+```
+- 多个<aop：config />部分在运行时折叠为单个统一的自动代理创建器，它应用指定的任何<aop：config />部分（通常来自不同的XML bean定义文件）的最强代理设置。 这也适用于<tx：annotation-driven />和<aop：aspectj-autoproxy />元素。
+- 在<tx：annotation-driven />，<aop：aspectj-autoproxy />或<aop：config />元素上使用proxy-target-class =“true”将强制使用CGLIB代理
+
+
+### 11.6.1 理解AOP代理
+- 代理对象this引用和目标对象this引用
+```java
+public class SimplePojo implements Pojo {
+
+    public void foo() {
+        // this next method invocation is a direct call on the 'this' reference
+        // 直接操作目标对象 target 不会被advice拦截
+        this.bar();
+    }
+
+    public void bar() {
+        // some logic...
+    }
+}
+```
+```java
+public class SimplePojo implements Pojo {
+
+    public void foo() {
+        // this works, but... gah!
+        // 代理对象 方法会被代理，会执行advice方法
+        ((Pojo) AopContext.currentProxy()).bar();
+    }
+
+    public void bar() {
+        // some logic...
+    }
+}
+```

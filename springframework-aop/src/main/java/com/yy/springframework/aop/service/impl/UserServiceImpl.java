@@ -2,6 +2,7 @@ package com.yy.springframework.aop.service.impl;
 
 import com.yy.springframework.aop.model.User;
 import com.yy.springframework.aop.service.UserService;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,6 +14,14 @@ public class UserServiceImpl implements UserService {
         System.out.println("com.yy.springframework.aop.service.impl.UserServiceImpl.login");
 //        throw new RuntimeException();
         return user;
+    }
+
+    public User register(User user) {
+        System.out.println("com.yy.springframework.aop.service.impl.UserServiceImpl.register");
+        // 获取代理对象 会进入advice方法
+        return ((UserService) AopContext.currentProxy()).login(user);
+        // 目标对象 不会进入advice方法
+//        return this.login(user);
     }
 
     public void userHello() {
