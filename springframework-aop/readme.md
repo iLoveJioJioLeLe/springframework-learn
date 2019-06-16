@@ -562,3 +562,84 @@ public class SimplePojo implements Pojo {
     }
 }
 ```
+
+## 11.7 编程式创建@AspectJ代理
+```java
+// create a factory that can generate a proxy for the given target object
+AspectJProxyFactory factory = new AspectJProxyFactory(targetObject);
+
+// add an aspect, the class must be an @AspectJ aspect
+// you can call this as many times as you need with different aspects
+factory.addAspect(SecurityManager.class);
+
+// you can also add existing aspect instances, the type of the object supplied must be an @AspectJ aspect
+factory.addAspect(usageTracker);
+
+// now get the proxy object...
+MyInterfaceType proxy = factory.getProxy();
+```
+
+## 11.8 Spring应用使用AspectJ
+- 至此覆盖到的章节，是纯SpringAOP，本章将使用AspectJ compiler/weaver
+
+
+### 11.8.1 Spring用Aspectj对DomainObject进行依赖注入
+- spring-aspects.jar提供了任意对象的注解驱动依赖注入，即使是ioc容器外的对象，如`new`创建的对象
+- 使用Aspecj进行依赖注入
+1. @Configurable注释标记一个类符合Spring驱动配置的条件
+```java
+package com.xyz.myapp.domain;
+
+import org.springframework.beans.factory.annotation.Configurable;
+
+@Configurable
+public class Account {
+    // ...
+}
+```
+2. 开启spring-configured
+```java
+@Configuration
+@EnableSpringConfigured
+public class AppConfig {
+
+}
+```
+备注：XML-based配置
+```xml
+<context:spring-configured/>
+```
+3. 加载时织入
+3-1. VM option
+`-javaagent:/path/to/aspectjweaver-1.8.9.jar`
+3-2. META-INF/aop.xml
+```xml
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+
+<aspectj>
+    <weaver>
+        <!-- 需要运行时植入切面的类 -->
+        <include within="com.yy.springframework.aop.model.*"/>
+    </weaver>
+</aspectj>
+```
+
+### 11.8.2 Other Spring aspects for AspectJ
+ 
+- @Transactional注解由AnnotationTransactionAspect解释
+- 需要注释实现类或实现类中的方法，而不是实现的接口
+
+
+### 11.8.3 用SpringIOC配置AspectJ aspects
+- 如果@AspectJ切面，一部分通过AspectJ织入，一部分通过SpringAOP使用，那么使用SpringAOP的aspects可以使用如下配置
+```xml
+<aop:aspectj-autoproxy>
+    <aop:include name="thisBean"/>
+    <aop:include name="thatBean"/>
+</aop:aspectj-autoproxy>
+```
+
+
+### 11.8.3 Spring框架中加载时织入AspectJ Load-time weaving AspectJ
+- 加载时织入，是指在将AspectJ切面加载到JVM中时，将其织入到应用程序的类文件中的过程
+
