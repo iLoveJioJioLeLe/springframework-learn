@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <bean id="userService" class="com.yy.springframework.aop.service.impl.UserServiceImpl"/>
+    <bean id="logAspect" class="com.yy.springframework.aop.aspect.LogAspect"/>
+    <bean id="timeCountAspect" class="com.yy.springframework.aop.aspect.TimeCountAspect"/>
+    <bean id="retryAspect" class="com.yy.springframework.aop.aspect.RetryAspect"/>
+    <aop:config>
+        <aop:pointcut id="pc" expression="execution(* com.yy.springframework.aop.service.impl.*.*(..))"/>
+        <aop:advisor advice-ref="logAspect" pointcut-ref="pc"/>
+        <aop:advisor advice-ref="retryAspect" pointcut-ref="pc"/>
+        <aop:aspect ref="timeCountAspect">
+            <aop:around method="execute" pointcut-ref="pc"/>
+            <aop:around method="execute" pointcut-ref="pc"/>
+        </aop:aspect>
+    </aop:config>
+</beans>

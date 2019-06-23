@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="springframework-aop" />
+        <module name="springframework-data" />
         <module name="springframework-ioc" />
         <module name="springframework-resource" />
         <module name="springframework-validation_dataBind_typeConversion" />
@@ -14,6 +15,7 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="springframework-aop" target="1.5" />
+      <module name="springframework-data" target="1.5" />
       <module name="springframework-ioc" target="1.5" />
       <module name="springframework-learn" target="1.5" />
       <module name="springframework-resource" target="1.5" />

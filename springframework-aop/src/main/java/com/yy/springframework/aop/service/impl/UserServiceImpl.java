@@ -1,5 +1,6 @@
 package com.yy.springframework.aop.service.impl;
 
+import com.yy.springframework.aop.annotation.TimeCount;
 import com.yy.springframework.aop.model.User;
 import com.yy.springframework.aop.service.UserService;
 import org.springframework.aop.framework.AopContext;
@@ -10,9 +11,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class UserServiceImpl implements UserService {
+    @TimeCount
     public User login(User user) {
         System.out.println("com.yy.springframework.aop.service.impl.UserServiceImpl.login");
-//        throw new RuntimeException();
+        if (user.getId() < 0) {
+            throw new RuntimeException("登录失败");
+        }
         return user;
     }
 

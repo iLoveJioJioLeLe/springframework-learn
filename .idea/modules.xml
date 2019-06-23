@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/springframework-aop/springframework-aop.iml" filepath="$PROJECT_DIR$/springframework-aop/springframework-aop.iml" />
+      <module fileurl="file://$PROJECT_DIR$/springframework-data/springframework-data.iml" filepath="$PROJECT_DIR$/springframework-data/springframework-data.iml" />
       <module fileurl="file://$PROJECT_DIR$/springframework-ioc/springframework-ioc.iml" filepath="$PROJECT_DIR$/springframework-ioc/springframework-ioc.iml" />
       <module fileurl="file://$PROJECT_DIR$/springframework-learn.iml" filepath="$PROJECT_DIR$/springframework-learn.iml" />
       <module fileurl="file://$PROJECT_DIR$/springframework-resource/springframework-resource.iml" filepath="$PROJECT_DIR$/springframework-resource/springframework-resource.iml" />
