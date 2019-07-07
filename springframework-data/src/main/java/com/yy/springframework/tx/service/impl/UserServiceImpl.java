@@ -5,10 +5,9 @@ import com.yy.springframework.tx.annotation.DatasourceNameEnum;
 import com.yy.springframework.tx.mapper.UserMapper;
 import com.yy.springframework.tx.model.User;
 import com.yy.springframework.tx.service.UserService;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 /**
  * Created by 2019/6/29.
@@ -23,6 +22,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public void saveUserWithTx(User user) {
         userMapper.save(user);
+        user.setPassword("1111333");
+        ((UserService)AopContext.currentProxy()).updateUserWithTx(user);
     }
 
     @Override

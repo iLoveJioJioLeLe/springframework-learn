@@ -6,10 +6,12 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         https://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/tx
-        https://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/tx/spring-tx.xsd
         http://www.springframework.org/schema/aop
-        https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
     <context:component-scan base-package="com.yy.springframework.tx"/>
+    <aop:aspectj-autoproxy expose-proxy="true"/>
     <!--<context:property-placeholder location="classpath:jdbc.properties"/>-->
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
@@ -49,7 +51,7 @@
 
     <tx:advice id="txAdvice" transaction-manager="txManager">
         <tx:attributes>
-            <tx:method name="*WithTx"/>
+            <tx:method name="*WithTx" propagation="REQUIRED"/>
         </tx:attributes>
     </tx:advice>
     <bean id="dataSourceAspect" class="com.yy.springframework.tx.aop.DataSourceAspect"/>
