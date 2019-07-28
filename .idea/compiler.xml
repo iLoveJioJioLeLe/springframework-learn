@@ -9,8 +9,11 @@
         <module name="springframework-aop" />
         <module name="springframework-data" />
         <module name="springframework-ioc" />
+        <module name="springframework-mvc" />
+        <module name="springframework-mvc-javaconfig" />
         <module name="springframework-resource" />
         <module name="springframework-validation_dataBind_typeConversion" />
+        <module name="springframeworkmvc-java-config" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
@@ -18,8 +21,12 @@
       <module name="springframework-data" target="1.8" />
       <module name="springframework-ioc" target="1.5" />
       <module name="springframework-learn" target="1.5" />
+      <module name="springframework-mvc" target="1.5" />
+      <module name="springframework-mvc-java-config" target="1.5" />
+      <module name="springframework-mvc-javaconfig" target="1.5" />
       <module name="springframework-resource" target="1.5" />
       <module name="springframework-validation_dataBind_typeConversion" target="1.5" />
+      <module name="springframeworkmvc-java-config" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>

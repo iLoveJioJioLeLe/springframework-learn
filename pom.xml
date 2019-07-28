@@ -14,7 +14,13 @@
         <module>springframework-validation_dataBind_typeConversion</module>
         <module>springframework-aop</module>
         <module>springframework-data</module>
+        <module>springframework-mvc</module>
+        <module>springframework-mvc-java-config</module>
     </modules>
+    <properties>
+        <maven-compiler-source>1.8</maven-compiler-source>
+        <maven-compiler-target>1.8</maven-compiler-target>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework</groupId>
